@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="400" viewBox="0 0 500 400">
+  <!-- Styles -->
+  <defs>
+    <style>
+      .main-box { fill: #e6f7ff; stroke: #1890ff; stroke-width: 3; }
+      .inner-box { fill: #fff; stroke: #d9d9d9; stroke-width: 1.5; }
+      .canvas-box { fill: #000; stroke: #1890ff; stroke-width: 1.5; }
+      .canvas-element { fill: none; stroke: #fff; stroke-width: 1; }
+      .arrow { stroke: #333; stroke-width: 1.5; marker-end: url(#arrowhead); }
+      .text { font-family: Arial, sans-serif; font-size: 14px; fill: #333; }
+      .code { font-family: monospace; font-size: 9px; fill: #555; }
+      .title { font-family: Arial, sans-serif; font-size: 20px; font-weight: bold; fill: #1890ff; }
+      .subtitle { font-family: Arial, sans-serif; font-size: 15px; font-weight: bold; fill: #333; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#333" />
+    </marker>
+    <!-- Gradient for 3D background -->
+    <linearGradient id="threejsBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e6f7ff" />
+      <stop offset="100%" stop-color="#bae7ff" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Main visualization engine container -->
+  <rect x="50" y="50" width="400" height="300" rx="10" class="main-box" fill="url(#threejsBg)" />
+  <text x="250" y="85" text-anchor="middle" class="title">Visualization Engine</text>
+  
+  <!-- Three.js renderer -->
+  <rect x="80" y="110" width="160" height="80" rx="5" class="inner-box" />
+  <text x="160" y="130" text-anchor="middle" class="subtitle">Three.js Renderer</text>
+  
+  <!-- Renderer code example -->
+  <text x="100" y="155" class="code">renderer = new Renderer()</text>
+  <text x="100" y="175" class="code">renderer.setSize(w, h)</text>
+  
+  <!-- Material library -->
+  <rect x="260" y="110" width="160" height="80" rx="5" class="inner-box" />
+  <text x="340" y="130" text-anchor="middle" class="subtitle">Material Library</text>
+  
+  <!-- Material examples -->
+  <text x="280" y="155" class="code">atomMaterials = {}</text>
+  <text x="280" y="175" class="code">createMaterial('H', red)</text>
+  
+  <!-- Scene manager -->
+  <rect x="80" y="210" width="160" height="80" rx="5" class="inner-box" />
+  <text x="160" y="230" text-anchor="middle" class="subtitle">Scene Manager</text>
+  
+  <!-- Scene information -->
+  <text x="100" y="255" class="code">scene.add(molecule)</text>
+  <text x="100" y="275" class="code">scene.setupLights()</text>
+  
+  <!-- Interactive controls -->
+  <rect x="260" y="210" width="160" height="80" rx="5" class="inner-box" />
+  <text x="340" y="230" text-anchor="middle" class="subtitle">Interactive Controls</text>
+  
+  <!-- Control examples -->
+  <text x="280" y="255" class="code">controls.enableZoom(true)</text>
+  <text x="280" y="275" class="code">controls.update()</text>
+  
+  <!-- 3D display example -->
+  <rect x="150" y="320" width="200" height="30" rx="3" class="canvas-box" />
+  <circle cx="200" cy="335" r="5" class="canvas-element" />
+  <circle cx="230" cy="335" r="7" class="canvas-element" />
+  <circle cx="270" cy="335" r="5" class="canvas-element" />
+  <line x1="200" y1="335" x2="230" y2="335" class="canvas-element" />
+  <line x1="230" y1="335" x2="270" y2="335" class="canvas-element" />
+  
+  <!-- Component connections -->
+  <line x1="160" y1="190" x2="160" y2="210" class="arrow" />
+  <line x1="340" y1="190" x2="340" y2="210" class="arrow" />
+  <line x1="240" y1="150" x2="260" y2="150" class="arrow" />
+  <line x1="240" y1="250" x2="260" y2="250" class="arrow" />
+  <line x1="160" y1="290" x2="160" y2="335" class="arrow" />
+  <line x1="340" y1="290" x2="340" y2="335" class="arrow" />
+</svg> 

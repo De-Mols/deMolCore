@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500">
+  <!-- Styles -->
+  <defs>
+    <style>
+      .k8s-box { fill: #326ce5; stroke: #2857b9; stroke-width: 3; }
+      .service-box { fill: #fff; stroke: #d9d9d9; stroke-width: 1.5; }
+      .infra-box { fill: #232f3e; stroke: #151c27; stroke-width: 3; }
+      .arrow { stroke: #333; stroke-width: 1.5; marker-end: url(#arrowhead); }
+      .text { font-family: Arial, sans-serif; font-size: 14px; fill: #333; }
+      .k8s-text { font-family: Arial, sans-serif; font-size: 14px; fill: #fff; }
+      .infra-text { font-family: Arial, sans-serif; font-size: 14px; fill: #fff; }
+      .title { font-family: Arial, sans-serif; font-size: 20px; font-weight: bold; fill: #fff; }
+      .infra-title { font-family: Arial, sans-serif; font-size: 20px; font-weight: bold; fill: #fff; }
+      .subtitle { font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; fill: #333; }
+      .k8s-logo { fill: #fff; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#333" />
+    </marker>
+    <!-- Gradient for Kubernetes background -->
+    <linearGradient id="k8sGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#326ce5" />
+      <stop offset="100%" stop-color="#254bbb" />
+    </linearGradient>
+    <!-- Gradient for Terraform background -->
+    <linearGradient id="terraformGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#232f3e" />
+      <stop offset="100%" stop-color="#151c27" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Kubernetes cluster -->
+  <rect x="50" y="50" width="700" height="300" rx="10" class="k8s-box" fill="url(#k8sGradient)" />
+  <text x="400" y="85" text-anchor="middle" class="title">Kubernetes Cluster</text>
+  
+  <!-- Kubernetes logo (simplified) -->
+  <path d="M110,75 L115,65 L125,65 L130,75 L125,85 L115,85 Z" class="k8s-logo" />
+  <circle cx="120" cy="75" r="5" fill="none" stroke="#fff" stroke-width="1" />
+  
+  <!-- Application pods -->
+  <rect x="80" y="110" width="150" height="100" rx="5" class="service-box" />
+  <text x="155" y="135" text-anchor="middle" class="subtitle">Application Pods</text>
+  
+  <!-- Pod icons -->
+  <circle cx="105" cy="170" r="15" fill="#f5f5f5" stroke="#d9d9d9" />
+  <text x="105" y="175" text-anchor="middle" class="text">Pod</text>
+  <circle cx="145" cy="170" r="15" fill="#f5f5f5" stroke="#d9d9d9" />
+  <text x="145" y="175" text-anchor="middle" class="text">Pod</text>
+  <circle cx="185" cy="170" r="15" fill="#f5f5f5" stroke="#d9d9d9" />
+  <text x="185" y="175" text-anchor="middle" class="text">Pod</text>
+  
+  <!-- Database cluster -->
+  <rect x="250" y="110" width="150" height="100" rx="5" class="service-box" />
+  <text x="325" y="135" text-anchor="middle" class="subtitle">Database Cluster</text>
+  
+  <!-- DB icons -->
+  <rect x="275" y="155" width="25" height="35" rx="3" fill="#f5f5f5" stroke="#d9d9d9" />
+  <rect x="280" y="150" width="25" height="35" rx="3" fill="#f5f5f5" stroke="#d9d9d9" />
+  <rect x="285" y="145" width="25" height="35" rx="3" fill="#f5f5f5" stroke="#d9d9d9" />
+  <text x="297" y="175" text-anchor="middle" class="text">DB</text>
+  <line x1="325" y1="160" x2="355" y2="160" stroke="#d9d9d9" />
+  <line x1="325" y1="170" x2="355" y2="170" stroke="#d9d9d9" />
+  <line x1="325" y1="180" x2="355" y2="180" stroke="#d9d9d9" />
+  
+  <!-- IPFS nodes -->
+  <rect x="420" y="110" width="150" height="100" rx="5" class="service-box" />
+  <text x="495" y="135" text-anchor="middle" class="subtitle">IPFS Nodes</text>
+  
+  <!-- IPFS icons -->
+  <polygon points="450,150 470,150 480,165 470,180 450,180 440,165" fill="#f5f5f5" stroke="#d9d9d9" />
+  <text x="460" y="170" text-anchor="middle" class="text">IPFS</text>
+  <polygon points="490,150 510,150 520,165 510,180 490,180 480,165" fill="#f5f5f5" stroke="#d9d9d9" />
+  <text x="500" y="170" text-anchor="middle" class="text">IPFS</text>
+  
+  <!-- Redis cluster -->
+  <rect x="590" y="110" width="150" height="100" rx="5" class="service-box" />
+  <text x="665" y="135" text-anchor="middle" class="subtitle">Redis Cluster</text>
+  
+  <!-- Redis icons -->
+  <polygon points="630,170 640,155 650,170 640,185" fill="#f5f5f5" stroke="#d9d9d9" />
+  <text x="640" y="170" text-anchor="middle" class="text">R</text>
+  <polygon points="660,170 670,155 680,170 670,185" fill="#f5f5f5" stroke="#d9d9d9" />
+  <text x="670" y="170" text-anchor="middle" class="text">R</text>
+  <polygon points="690,170 700,155 710,170 700,185" fill="#f5f5f5" stroke="#d9d9d9" />
+  <text x="700" y="170" text-anchor="middle" class="text">R</text>
+  
+  <!-- Monitoring stack -->
+  <rect x="80" y="230" width="150" height="100" rx="5" class="service-box" />
+  <text x="155" y="255" text-anchor="middle" class="subtitle">Monitoring Stack</text>
+  <text x="155" y="275" text-anchor="middle" class="text">Prometheus/Grafana</text>
+  
+  <!-- Monitoring icon (simplified) -->
+  <polyline points="105,300 120,280 135,290 150,275 165,295 180,285" fill="none" stroke="#d9d9d9" stroke-width="2" />
+  
+  <!-- Logging stack -->
+  <rect x="250" y="230" width="150" height="100" rx="5" class="service-box" />
+  <text x="325" y="255" text-anchor="middle" class="subtitle">Logging Stack</text>
+  <text x="325" y="275" text-anchor="middle" class="text">ELK Stack</text>
+  
+  <!-- Logs icon (simplified) -->
+  <line x1="285" y1="290" x2="365" y2="290" stroke="#d9d9d9" stroke-width="2" />
+  <line x1="285" y1="300" x2="365" y2="300" stroke="#d9d9d9" stroke-width="2" />
+  <line x1="285" y1="310" x2="335" y2="310" stroke="#d9d9d9" stroke-width="2" />
+  
+  <!-- Arrow down to Terraform-managed infrastructure -->
+  <line x1="400" y1="350" x2="400" y2="400" class="arrow" stroke-width="3" />
+  
+  <!-- Terraform-managed infrastructure -->
+  <rect x="100" y="400" width="600" height="70" rx="10" class="infra-box" fill="url(#terraformGradient)" />
+  <text x="400" y="445" text-anchor="middle" class="infra-title">Terraform Managed Infrastructure</text>
+  
+  <!-- Terraform logo (simplified) -->
+  <rect x="130" y="425" width="15" height="15" fill="#fff" />
+  <rect x="150" y="425" width="15" height="15" fill="#fff" />
+  <rect x="130" y="445" width="15" height="15" fill="#fff" />
+  <rect x="150" y="445" width="15" height="15" fill="#fff" opacity="0.5" />
+</svg> 

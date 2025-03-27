@@ -1,0 +1,80 @@
+{
+  "name": "demol",
+  "version": "1.0.0",
+  "description": "Decentralized molecular visualization and research platform",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/demol/demol.git"
+  },
+  "author": "DeMol",
+  "homepage": "https://demol.io",
+  "jest": {
+    "testRegex": [
+      "./*\\.test.js$",
+      "./*\\.test.ts$"
+    ],
+    "setupFiles": [
+      "jest-webgl-canvas-mock",
+      "jsdom-worker"
+    ],
+    "coverageReporters": [
+      "lcov",
+      "text"
+    ]
+  },
+  "engines": {
+    "npm": ">=8.11",
+    "node": ">=16.16.0"
+  },
+  "main": "build/demol.js",
+  "types": "build/types/index.d.ts",
+  "scripts": {
+    "build": "npm run build:dev && npm run build:prod",
+    "build:dev": "webpack --config webpack.dev.js --mode development",
+    "build:prod": "webpack --config webpack.prod.js --mode production",
+    "test": "npm run generate:all && npm run jest && npm run glcheck",
+    "generate:all": "python3 ./tests/generate_all.py",
+    "cover": "npm run generate:all && npx jest --coverage --verbose"
+  },
+  "dependencies": {
+    "iobuffer": "^5.3.1",
+    "ipfs-http-client": "^60.0.1",
+    "netcdfjs": "^3.0.0",
+    "pako": "^2.1.0",
+    "upng-js": "^2.1.0",
+    "web3": "^4.3.0",
+    "three": "^0.162.0",
+    "draco3d": "^1.5.7",
+    "gltf-pipeline": "^3.0.5",
+    "buffer": "^6.0.3"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.20.7",
+    "@babel/eslint-parser": "^7.19.1",
+    "@babel/plugin-transform-typescript": "^7.20.7",
+    "@eslint/js": "^9.18.0",
+    "@types/pako": "^2.0.0",
+    "@types/web3": "^1.2.2",
+    "@typescript-eslint/eslint-plugin": "^8.21.0",
+    "@typescript-eslint/parser": "^8.21.0",
+    "canvas": "^2.11.0",
+    "eslint": "^8.57.1",
+    "eslint-plugin-react": "^7.37.4",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "eslint-webpack-plugin": "^3.2.0",
+    "globals": "^15.14.0",
+    "jest": "^29.3.1",
+    "jest-environment-jsdom": "^29.3.1",
+    "jest-webgl-canvas-mock": "^0.2.3",
+    "jquery": "^3.6.3",
+    "jsdom": "^20.0.3",
+    "jsdom-worker": "^0.3.0",
+    "raw-loader": "^4.0.2",
+    "terser-webpack-plugin": "^5.3.6",
+    "ts-loader": "^9.4.2",
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.21.0",
+    "webpack": "^5.75.0",
+    "webpack-cli": "^5.0.1"
+  }
+}

@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="400" viewBox="0 0 500 400">
+  <!-- Styles -->
+  <defs>
+    <style>
+      .main-box { fill: #f6ffed; stroke: #52c41a; stroke-width: 3; }
+      .inner-box { fill: #fff; stroke: #d9d9d9; stroke-width: 1.5; }
+      .arrow { stroke: #333; stroke-width: 1.5; marker-end: url(#arrowhead); }
+      .text { font-family: Arial, sans-serif; font-size: 14px; fill: #333; }
+      .code { font-family: monospace; font-size: 10px; fill: #555; }
+      .title { font-family: Arial, sans-serif; font-size: 20px; font-weight: bold; fill: #52c41a; }
+      .subtitle { font-family: Arial, sans-serif; font-size: 15px; font-weight: bold; fill: #333; }
+      .format { font-family: monospace; font-size: 10px; fill: #389e0d; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#333" />
+    </marker>
+    <!-- Pattern for molecular background -->
+    <pattern id="moleculePattern" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
+      <rect x="0" y="0" width="60" height="60" fill="#f6ffed" />
+      <circle cx="15" cy="15" r="5" fill="#52c41a" fill-opacity="0.2" />
+      <circle cx="45" cy="45" r="5" fill="#52c41a" fill-opacity="0.2" />
+      <circle cx="15" cy="45" r="3" fill="#52c41a" fill-opacity="0.2" />
+      <circle cx="45" cy="15" r="3" fill="#52c41a" fill-opacity="0.2" />
+      <line x1="15" y1="15" x2="45" y2="45" stroke="#52c41a" stroke-width="0.5" stroke-opacity="0.3" />
+      <line x1="15" y1="45" x2="45" y2="15" stroke="#52c41a" stroke-width="0.5" stroke-opacity="0.3" />
+    </pattern>
+  </defs>
+  
+  <!-- Main model parser container -->
+  <rect x="50" y="50" width="400" height="300" rx="10" class="main-box" fill="url(#moleculePattern)" />
+  <text x="250" y="85" text-anchor="middle" class="title">Model Parser</text>
+  
+  <!-- Format detector -->
+  <rect x="80" y="110" width="160" height="80" rx="5" class="inner-box" />
+  <text x="160" y="130" text-anchor="middle" class="subtitle">Format Detector</text>
+  
+  <!-- Formats -->
+  <text x="100" y="155" class="format">detectFormat(data)</text>
+  <text x="100" y="175" class="format">PDB | MMTF | CIF | XYZ</text>
+  
+  <!-- Structure reader -->
+  <rect x="260" y="110" width="160" height="80" rx="5" class="inner-box" />
+  <text x="340" y="130" text-anchor="middle" class="subtitle">Structure Reader</text>
+  
+  <!-- Code example -->
+  <text x="280" y="155" class="code">parseStructure(format)</text>
+  <text x="280" y="175" class="code">→ MolecularStructure</text>
+  
+  <!-- Atom resolver -->
+  <rect x="80" y="210" width="160" height="80" rx="5" class="inner-box" />
+  <text x="160" y="230" text-anchor="middle" class="subtitle">Atom Resolver</text>
+  
+  <!-- Atom logic -->
+  <text x="100" y="255" class="code">resolveAtoms(structure)</text>
+  <text x="100" y="275" class="code">computeBonds(atoms)</text>
+  
+  <!-- Molecular properties -->
+  <rect x="260" y="210" width="160" height="80" rx="5" class="inner-box" />
+  <text x="340" y="230" text-anchor="middle" class="subtitle">Molecular Properties</text>
+  
+  <!-- Properties -->
+  <text x="280" y="255" class="code">computeProperties()</text>
+  <text x="280" y="275" class="code">extractCharges()</text>
+  
+  <!-- Component connections -->
+  <line x1="160" y1="190" x2="160" y2="210" class="arrow" />
+  <line x1="340" y1="190" x2="340" y2="210" class="arrow" />
+  <line x1="240" y1="150" x2="260" y2="150" class="arrow" />
+  <line x1="240" y1="250" x2="260" y2="250" class="arrow" />
+</svg> 
