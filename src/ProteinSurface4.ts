@@ -1,4 +1,6 @@
 import {Vector3} from "./WebGL/math"
+import { SURFACE_IN_OUT, SURFACE_IS_DONE, SURFACE_IS_BOUND, PROBE_RADIUS, DEFAULT_SCALE_FACTOR } from './constants';
+
 export enum SurfaceType {
     VDW = 1,
     MS = 2,
@@ -85,7 +87,7 @@ export class MarchingCubeInitializer {
                         const val:any = !!(data[index] & this.ISDONE);
                         code |= val << p;                        
                     }
-                    if (code === 0 || code === 255)
+                    if (code === 0 || code === WHITE_RGB.r)
                         continue;
                     const ecode = etable[code];
                     if (ecode === 0)
@@ -99,21 +101,21 @@ export class MarchingCubeInitializer {
                         intersects[2] = getVertex(i, j, k, code, 3, 2);
                     if (ecode & 8)
                         intersects[3] = getVertex(i, j, k, code, 2, 0);
-                    if (ecode & 16)
+                    if (ecode & BIT_MASK_128)
                         intersects[4] = getVertex(i, j, k, code, 4, 5);
-                    if (ecode & 32)
+                    if (ecode & BIT_MASK_256)
                         intersects[5] = getVertex(i, j, k, code, 5, 7);
-                    if (ecode & 64)
+                    if (ecode & BIT_MASK_512)
                         intersects[6] = getVertex(i, j, k, code, 7, 6);
-                    if (ecode & 128)
+                    if (ecode & BIT_MASK_1024)
                         intersects[7] = getVertex(i, j, k, code, 6, 4);
-                    if (ecode & 256)
+                    if (ecode & BIT_MASK_2048)
                         intersects[8] = getVertex(i, j, k, code, 0, 4);
-                    if (ecode & 512)
+                    if (ecode & BIT_MASK_512)
                         intersects[9] = getVertex(i, j, k, code, 1, 5);
-                    if (ecode & 1024)
+                    if (ecode & BIT_MASK_1024)
                         intersects[10] = getVertex(i, j, k, code, 3, 7);
-                    if (ecode & 2048)
+                    if (ecode & BIT_MASK_2048)
                         intersects[11] = getVertex(i, j, k, code, 2, 6);       
                     for (let t = 0; t < ttable.length; t += 3) {
                         let a = intersects[ttable[t]],
@@ -568,14 +570,14 @@ export class PointGrid  {
     }
 }
 export class Surface3D {
-    readonly INOUT = 1;
-    readonly ISDONE = 2;
-    readonly ISBOUND = 4;
+    readonly INOUT = SURFACE_IN_OUT;
+    readonly ISDONE = SURFACE_IS_DONE;
+    readonly ISBOUND = SURFACE_IS_BOUND;
     ptranx:number = 0;
     ptrany:number = 0;
     ptranz:number = 0;
-    probeRadius:number = 1.4;
-    defaultScaleFactor:number = 2;
+    probeRadius:number = PROBE_RADIUS;
+    defaultScaleFactor:number = DEFAULT_SCALE_FACTOR;
     scaleFactor:number = this.defaultScaleFactor; 
     pHeight:number = 0;
     pWidth:number = 0;

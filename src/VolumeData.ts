@@ -3,6 +3,8 @@ import { Vector3, Matrix4 } from "./WebGL/math";
 import { DensityFormat } from "./parsers/DensityFormat";
 import { CUBE } from "./parsers/CUBE";
 import { inflate } from "pako";
+import { BOHR_TO_ANGSTROM, ANGSTROM_TO_BOHR, DEGREES_TO_RADIANS } from './constants';
+
 interface VolumeRenderOptions {
     negate?: boolean;
     normalize?: boolean;
@@ -128,8 +130,8 @@ export class VolumeRender {
             this.data = [];
             return;
         }
-        const l_units = 1.889725992;
-        const e_units = 0.036749309;
+        const l_units = BOHR_TO_ANGSTROM;
+        const e_units = ANGSTROM_TO_BOHR;
         const convFactor = parseFloat(lines[1]);
         let v: string[];
         v = lines[2].replace(/^\s+/, "").split(/\s+/);
@@ -306,22 +308,22 @@ export class VolumeRender {
             0
         ];
         const basisY: Array<any> = [
-            h.ylen * Math.cos(Math.PI / 180.0 * h.gamma),
-            h.ylen * Math.sin(Math.PI / 180.0 * h.gamma),
+            h.ylen * Math.cos(DEGREES_TO_RADIANS * h.gamma),
+            h.ylen * Math.sin(DEGREES_TO_RADIANS * h.gamma),
             0
         ];
         const basisZ: Array<any> = [
-            h.zlen * Math.cos(Math.PI / 180.0 * h.beta),
+            h.zlen * Math.cos(DEGREES_TO_RADIANS * h.beta),
             h.zlen * (
-                Math.cos(Math.PI / 180.0 * h.alpha)
-                - Math.cos(Math.PI / 180.0 * h.gamma)
-                * Math.cos(Math.PI / 180.0 * h.beta)
-            ) / Math.sin(Math.PI / 180.0 * h.gamma),
+                Math.cos(DEGREES_TO_RADIANS * h.alpha)
+                - Math.cos(DEGREES_TO_RADIANS * h.gamma)
+                * Math.cos(DEGREES_TO_RADIANS * h.beta)
+            ) / Math.sin(DEGREES_TO_RADIANS * h.gamma),
             0
         ];
         basisZ[2] = Math.sqrt(
-            h.zlen * h.zlen * Math.sin(Math.PI / 180.0 * h.beta) *
-            Math.sin(Math.PI / 180.0 * h.beta) - basisZ[1] * basisZ[1]
+            h.zlen * h.zlen * Math.sin(DEGREES_TO_RADIANS * h.beta) *
+            Math.sin(DEGREES_TO_RADIANS * h.beta) - basisZ[1] * basisZ[1]
         );
         const basis: Array<any> = [0, basisX, basisY, basisZ];
         const nxyz: Array<any> = [0, h.MX, h.MY, h.MZ];

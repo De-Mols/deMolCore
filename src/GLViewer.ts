@@ -12,6 +12,29 @@ import { Surface3D, SurfaceType, syncSurface } from "./Surface3D4";
 import { GLVolumetricRender, VolumetricRendererSpec } from "./VolumetricRender";
 import { AtomSelectionSpec, AtomSpec } from "./specs";
 import { decode, toRGBA8, encode } from 'upng-js'
+import {
+    HOVER_DURATION,
+    LONG_TOUCH_DURATION,
+    CAMERA_FAR,
+    CAMERA_Z,
+    CAMERA_NEAR,
+    CAMERA_FOG_FAR,
+    DEGREES_TO_RADIANS,
+    NEAR_ZERO,
+    NEAR_ONE,
+    ROTATION_THRESHOLD,
+    MAX_VOLUME,
+    WHEEL_DELTA_FACTOR,
+    ZOOM_FACTOR,
+    SLAB_ADJUSTMENT_FACTOR,
+    ANIMATION_INTERVAL,
+    NUM_WORKERS,
+    DEFAULT_FOV,
+    FOG_START,
+    DEFAULT_SLAB_NEAR,
+    DEFAULT_SLAB_FAR
+} from './constants';
+
 export const CONTEXTS_PER_VIEWPORT = 16;
 interface SurfObj {
     geo: Geometry;
@@ -23,8 +46,8 @@ interface SurfObj {
     style?: SurfaceStyleSpec;
 }
 export class ViewerDeMol {
-    private static numWorkers = 4; 
-    private static maxVolume = 64000; 
+    private static numWorkers = NUM_WORKERS; 
+    private static maxVolume = MAX_VOLUME; 
     private callback: any;
     private defaultcolors: any;
     private config: ViewerSpec;
@@ -41,17 +64,17 @@ export class ViewerDeMol {
     private hoverables = []; 
     private contextMenuEnabledObjects = []; 
     private current_hover: any = null;
-    private hoverDuration = 500;
-    private longTouchDuration = 1000;
+    private hoverDuration = HOVER_DURATION;
+    private longTouchDuration = LONG_TOUCH_DURATION;
     private viewer_frame = 0;
     private WIDTH: number;
     private HEIGHT: number;
     private viewChangeCallback: any = null;
     private stateChangeCallback: any = null;
-    private NEAR = 1;
-    private FAR = 800;
-    private CAMERA_Z = 150;
-    private fov = 20;
+    private NEAR = CAMERA_NEAR;
+    private FAR = CAMERA_FAR;
+    private CAMERA_Z = CAMERA_Z;
+    private fov = DEFAULT_FOV;
     private linkedViewers = [];
     private renderer: Renderer | null = null;
     private row: number;
@@ -155,7 +178,7 @@ export class ViewerDeMol {
     }
     private initializeScene() {
         this.scene = new Scene();
-        this.scene.fog = new Fog(this.bgColor, 100, 200);
+        this.scene.fog = new Fog(this.bgColor, CAMERA_NEAR, CAMERA_FOG_FAR);
         this.modelGroup = new Object3D();
         this.rotationGroup = new Object3D();
         this.rotationGroup.useQuaternion = true;
@@ -238,7 +261,7 @@ export class ViewerDeMol {
         if (this.camera.near + 1 > this.camera.far)
             this.camera.far = this.camera.near + 1;
         this.camera.fov = this.fov;
-        this.camera.right = center * Math.tan(Math.PI / 180 * this.fov);
+        this.camera.right = center * Math.tan(DEGREES_TO_RADIANS * this.fov);
         this.camera.left = -this.camera.right;
         this.camera.top = this.camera.right / this.ASPECT;
         this.camera.bottom = -this.camera.top;
@@ -708,7 +731,7 @@ export class ViewerDeMol {
                 }
                 else {
                 }
-            }, this.longTouchDuration);
+            }, self.longTouchDuration);
         }
     }
     public _handleMouseUp(ev) {
@@ -742,8 +765,8 @@ export class ViewerDeMol {
         if (ev.detail) {
             this.rotationGroup.position.z += mult * scaleFactor * ev.detail / 10;
         } else if (ev.wheelDelta) {
-            const wd = ev.wheelDelta * 600 / (ev.wheelDelta + 600);
-            this.rotationGroup.position.z -= mult * scaleFactor * wd / 400;
+            const wd = ev.wheelDelta * WHEEL_DELTA_FACTOR / (ev.wheelDelta + WHEEL_DELTA_FACTOR);
+            this.rotationGroup.position.z -= mult * scaleFactor * wd / ZOOM_FACTOR;
         }
         this.rotationGroup.position.z = this.adjustZoomToLimits(this.rotationGroup.position.z);
         this.show();
@@ -837,7 +860,7 @@ export class ViewerDeMol {
                 function () {
                     self.handleHoverSelection(mouse.x, mouse.y, ev);
                 },
-                this.hoverDuration);
+                self.hoverDuration);
         }
         if (!this.isDragging)
             return;
@@ -862,8 +885,8 @@ export class ViewerDeMol {
         const r = Math.hypot(dx, dy);
         let scaleFactor;
         if (mode == 3 || (this.mouseButton == 3 && ev.ctrlKey)) { 
-            this.slabNear = this.cslabNear + dx * 100;
-            this.slabFar = this.cslabFar - dy * 100;
+            this.slabNear = this.cslabNear + dx * SLAB_ADJUSTMENT_FACTOR;
+            this.slabFar = this.cslabFar - dy * SLAB_ADJUSTMENT_FACTOR;
         } else if (mode == 2 || this.mouseButton == 3 || ev.shiftKey) { 
             scaleFactor = (this.CAMERA_Z - this.rotationGroup.position.z) * 0.85;
             if (scaleFactor < 80)
@@ -1163,7 +1186,7 @@ export class ViewerDeMol {
             k = axis.z * s;
             return new Quaternion(i, j, k, c).normalize();
         };
-        const rangle = Math.PI * angle / 180.0;
+        const rangle = Math.PI * angle * DEGREES_TO_RADIANS;
         const q = qFromAngle(rangle);
         if (animationDuration) {
             const final = new Quaternion().copy(this.rotationGroup.quaternion).multiply(q);
@@ -1577,7 +1600,7 @@ export class ViewerDeMol {
         maxD = Math.sqrt(maxDsq) * 2;
         const finalpos = center.clone().multiplyScalar(-1);
         let finalz = -(maxD * 0.5
-            / Math.tan(Math.PI / 180.0 * this.camera.fov / 2) - this.CAMERA_Z);
+            / Math.tan(DEGREES_TO_RADIANS * this.camera.fov / 2) - this.CAMERA_Z);
         finalz = this.adjustZoomToLimits(finalz);
         if (animationDuration > 0) {
             this.animateMotion(animationDuration, fixedPath,
@@ -1804,9 +1827,9 @@ export class ViewerDeMol {
                 matrix = data.matrix;
             } else {
                 let a = data.a, b = data.b, c = data.c, alpha = data.alpha, beta = data.beta, gamma = data.gamma;
-                alpha = alpha * Math.PI / 180.0;
-                beta = beta * Math.PI / 180.0;
-                gamma = gamma * Math.PI / 180.0;
+                alpha = alpha * DEGREES_TO_RADIANS;
+                beta = beta * DEGREES_TO_RADIANS;
+                gamma = gamma * DEGREES_TO_RADIANS;
                 let u, v, w;
                 u = Math.cos(beta);
                 v = (Math.cos(alpha) - Math.cos(beta) * Math.cos(gamma)) / Math.sin(gamma);
@@ -1916,9 +1939,9 @@ export class ViewerDeMol {
                 const invmatrix = new Matrix3().getInverse3(matrix);
                 omitPosition = function (x, y, z) {
                     const pos = new Vector3(x, y, z).applyMatrix3(invmatrix);
-                    if (pos.x > -0.0001 && pos.x < 1.0001 &&
-                        pos.y > -0.0001 && pos.y < 1.0001 &&
-                        pos.z > -0.0001 && pos.z < 1.0001) {
+                    if (pos.x > NEAR_ZERO && pos.x < NEAR_ONE &&
+                        pos.y > NEAR_ZERO && pos.y < NEAR_ONE &&
+                        pos.z > NEAR_ZERO && pos.z < NEAR_ONE) {
                         return false;
                     } else {
                         return true;
@@ -2041,7 +2064,7 @@ export class ViewerDeMol {
     }
     public enableFog(fog: boolean) {
         if (fog) {
-            this.scene.fog = new Fog(this.bgColor, 100, 200);
+            this.scene.fog = new Fog(this.bgColor, CAMERA_NEAR, CAMERA_FOG_FAR);
         } else {
             this.config.disableFog = true;
             this.show();
@@ -2082,7 +2105,7 @@ export class ViewerDeMol {
     }
     public animate(options) {
         this.incAnim();
-        let interval = 100;
+        let interval = ANIMATION_INTERVAL;
         let loop = "forward";
         let reps = Infinity;
         options = options || {};
@@ -2931,9 +2954,9 @@ export class ViewerDeMol {
         const dist = this.getPerceivedDistance();
         if (!x) x = 5.0;
         if (isright || this.camera.position.x > 0) 
-            this.camera.position.x = dist * Math.tan(Math.PI / 180.0 * x);
+            this.camera.position.x = dist * Math.tan(DEGREES_TO_RADIANS * x);
         else
-            this.camera.position.x = -dist * Math.tan(Math.PI / 180.0 * x);
+            this.camera.position.x = -dist * Math.tan(DEGREES_TO_RADIANS * x);
         this.camera.lookAt(new Vector3(0, 0, this.rotationGroup.position.z));
         return this.camera.position.x;
     }

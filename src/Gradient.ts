@@ -1,9 +1,12 @@
 import { CC, Color, ColorSpec } from "./colors";
+import { WHITE_RGB } from './constants';
+
 export abstract class GradientType {
   gradient?: string;
   abstract valueToHex(value: number, range?: number[]): number;
   abstract range(): number[] | null;
 }
+
 export function normalizeValue(
   lo: number,
   hi: number,
@@ -20,6 +23,7 @@ export function normalizeValue(
     return { lo: hi, hi: lo, val: val };
   }
 }
+
 export type GradientSpec = {
   gradient?: string;
   min?: number;
@@ -29,6 +33,7 @@ export type GradientSpec = {
   colors?: Array<ColorSpec>;
   map?: Record<string, unknown>
 };
+
 export function getGradient(grad: GradientSpec|GradientType): GradientType {
   if (grad instanceof GradientType) {
     return grad;
@@ -54,6 +59,7 @@ export function getGradient(grad: GradientSpec|GradientType): GradientType {
   }
   return grad as GradientType;
 }
+
 export class RWB extends GradientType {
   gradient = "RWB";
   min: number;
@@ -102,11 +108,11 @@ export class RWB extends GradientType {
     else middle = (lo + hi) / 2;
     let scale: number, color: number;
     if (val < middle) {
-      scale = Math.floor(255 * Math.sqrt((val - lo) / (middle - lo)));
+      scale = Math.floor(WHITE_RGB.r * Math.sqrt((val - lo) / (middle - lo)));
       color = 0xff0000 + 0x100 * scale + scale;
       return color;
     } else if (val > middle) {
-      scale = Math.floor(255 * Math.sqrt(1 - (val - middle) / (hi - middle)));
+      scale = Math.floor(WHITE_RGB.r * Math.sqrt(1 - (val - middle) / (hi - middle)));
       color = 0x10000 * scale + 0x100 * scale + 0xff;
       return color;
     } else {
@@ -114,6 +120,7 @@ export class RWB extends GradientType {
     }
   }
 }
+
 export class ROYGB extends GradientType {
   gradient = "ROYGB";
   mult: number;
@@ -152,19 +159,19 @@ export class ROYGB extends GradientType {
     const q3 = (mid + hi) / 2;
     let scale: number, color: number;
     if (val < q1) {
-      scale = Math.floor(255 * Math.sqrt((val - lo) / (q1 - lo)));
+      scale = Math.floor(WHITE_RGB.r * Math.sqrt((val - lo) / (q1 - lo)));
       color = 0xff0000 + 0x100 * scale + 0;
       return color;
     } else if (val < mid) {
-      scale = Math.floor(255 * Math.sqrt(1 - (val - q1) / (mid - q1)));
+      scale = Math.floor(WHITE_RGB.r * Math.sqrt(1 - (val - q1) / (mid - q1)));
       color = 0x010000 * scale + 0xff00 + 0x0;
       return color;
     } else if (val < q3) {
-      scale = Math.floor(255 * Math.sqrt((val - mid) / (q3 - mid)));
+      scale = Math.floor(WHITE_RGB.r * Math.sqrt((val - mid) / (q3 - mid)));
       color = 0x000000 + 0xff00 + 0x1 * scale;
       return color;
     } else {
-      scale = Math.floor(255 * Math.sqrt(1 - (val - q3) / (hi - q3)));
+      scale = Math.floor(WHITE_RGB.r * Math.sqrt(1 - (val - q3) / (hi - q3)));
       color = 0x000000 + 0x0100 * scale + 0xff;
       return color;
     }
@@ -176,6 +183,7 @@ export class ROYGB extends GradientType {
     return null;
   }
 }
+
 export class Sinebow extends GradientType {
   gradient = "Sinebow";
   mult: number;
@@ -214,11 +222,11 @@ export class Sinebow extends GradientType {
     const scale = (val - lo) / (hi - lo);
     const h = (5 * scale) / 6.0 + 0.5;
     let r = Math.sin(Math.PI * h);
-    r *= r * 255;
+    r *= r * WHITE_RGB.r;
     let g = Math.sin(Math.PI * (h + 1 / 3.0));
-    g *= g * 255;
+    g *= g * WHITE_RGB.g;
     let b = Math.sin(Math.PI * (h + 2 / 3.0));
-    b *= b * 255;
+    b *= b * WHITE_RGB.b;
     return (
       0x10000 * Math.floor(r) + 0x100 * Math.floor(b) + 0x1 * Math.floor(g)
     );
@@ -230,6 +238,7 @@ export class Sinebow extends GradientType {
     return null;
   }
 }
+
 export class CustomLinear extends GradientType {
   gradient = "linear";
   min: number;
@@ -288,7 +297,8 @@ export class CustomLinear extends GradientType {
     return col.getHex();
   }
 }
- export const builtinGradients  = {
+
+export const builtinGradients  = {
   "rwb": RWB,
   "RWB": RWB,
   "roygb": ROYGB,
@@ -296,6 +306,7 @@ export class CustomLinear extends GradientType {
   "sinebow": Sinebow,
   "linear": CustomLinear
 };
+
 export class Gradient extends GradientType {
   static RWB = RWB;
   static ROYGB = ROYGB;

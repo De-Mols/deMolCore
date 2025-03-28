@@ -9,6 +9,8 @@ import {
 import { Gradient } from "./Gradient";
 import { Color, CC, ColorSpec } from "./colors";
 import {XYZ} from "./WebGL/math"
+import { WHITE_RGB, LABEL_CANVAS_WIDTH } from './constants';
+
 export let LabelCount = 0;
 function roundRect(ctx: CanvasRenderingContext2D, x: any, y: any, w: number, h: number, r: number, drawBorder: boolean) {
   ctx.beginPath();
@@ -72,7 +74,7 @@ export class Label {
     this.id = LabelCount++;
     this.stylespec = parameters || {};
     this.canvas = document.createElement("canvas");
-    this.canvas.width = 134;
+    this.canvas.width = LABEL_CANVAS_WIDTH;
     this.canvas.height = 35;
     this.context = this.canvas.getContext("2d");
     this.sprite = new Sprite();
@@ -103,9 +105,9 @@ export class Label {
     const font = style.font ? style.font : "sans-serif";
     const fontSize = parseInt(style.fontSize) ? parseInt(style.fontSize) : 18;
     const fontColor = getColor(style.fontColor, style.fontOpacity, {
-      r: 255,
-      g: 255,
-      b: 255,
+      r: WHITE_RGB.r,
+      g: WHITE_RGB.g,
+      b: WHITE_RGB.b,
       a: 1.0,
     });
     const padding = style.padding ? style.padding : 4;

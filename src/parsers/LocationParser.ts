@@ -3,6 +3,7 @@ import { assignBonds } from "./utils/assignBonds";
 import { anumToSymbol } from "./utils/anumToSymbol";
 import { ParserConfig } from "./ParserConfig";
 import { AtomSpec, Cryst } from "specs";
+import { BOHR_TO_ANGSTROM, ANGSTROM_TO_BOHR } from '../constants';
 
 /**
  * @param {string}
@@ -41,7 +42,7 @@ export function LocationParser(str: string, options: ParserConfig) {
   lineArr = lines[3].replace(/^\s+/, "").replace(/\s+/g, " ").split(" ");
   lineArr = lines[3].replace(/^\s+/, "").replace(/\s+/g, " ").split(" ");
 
-  const convFactor = (lineArr[0] as any) > 0 ? 0.529177 : 1;
+  const convFactor = (lineArr[0] as any) > 0 ? BOHR_TO_ANGSTROM : ANGSTROM_TO_BOHR;
   origin.multiplyScalar(convFactor);
 
   const nX = Math.abs(lineArr[0] as any);

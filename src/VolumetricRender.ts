@@ -5,6 +5,8 @@ import { CC } from "./colors";
 import { Shape3D } from "./Shape3D";
 import { AtomSelectionSpec } from "specs";
 import { Viewer3D } from "Viewer3D";
+import { TRANSFER_BUFFER_SIZE, DEFAULT_SUBSAMPLES } from './constants';
+
 export interface VolumetricRendererSpec {
     transferfn?: { color: unknown; opacity: unknown; value: unknown }[];
     subsamples?: number;
@@ -50,8 +52,8 @@ export class GLVolumetricRender {
         spec: VolumetricRendererSpec, viewer?: Viewer3D) {
         spec = spec || {};
         const transferfn = Object.assign([], spec.transferfn);
-        this.subsamples = spec.subsamples || 5.0;
-        const TRANSFER_BUFFER_SIZE = 256;
+        this.subsamples = spec.subsamples || DEFAULT_SUBSAMPLES;
+        const TRANSFER_BUFFER_SIZE = TRANSFER_BUFFER_SIZE;
         transferfn.forEach(function (a: { value: any; }) { a.value = parseFloat(a.value); });
         transferfn.sort(function (a: { value: number; }, b: { value: number; }) { return a.value - b.value; });
         this.min = transferfn[0].value;

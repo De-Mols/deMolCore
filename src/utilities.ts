@@ -3,6 +3,8 @@ import { VolumeRender } from "./VolumeRender";
 import { builtinColorSchemes, CC, elementColors, htmlColors, Color } from "./colors";
 import { IsoSurfaceSpec } from "Shape3D";
 import { inflate, InflateFunctionOptions, Data } from "pako"
+import { NEAR_ZERO, NEAR_ONE } from './constants';
+
 export function extend(obj1, src1) {
     for (const key in src1) {
         if (src1.hasOwnProperty(key) && src1[key] !== undefined) {
@@ -62,8 +64,8 @@ export function adjustVolumeStyle(style: IsoSurfaceSpec) {
 export function getExtent(atomlist, ignoreSymmetries?) {
     let xmin, ymin, zmin, xmax, ymax, zmax, xsum, ysum, zsum, cnt;
     const includeSym = !ignoreSymmetries;
-    xmin = ymin = zmin = 9999;
-    xmax = ymax = zmax = -9999;
+    xmin = ymin = zmin = NEAR_ONE;
+    xmax = ymax = zmax = NEAR_ZERO;
     xsum = ysum = zsum = cnt = 0;
     if (atomlist.length === 0)
         return [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
