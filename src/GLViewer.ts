@@ -2207,11 +2207,92 @@ export class ViewerDeMol {
         return options;
     }
     public addModel(data?, format = "", options?) {
-        options = this.getModelOpt(options);
-        const m = new Model3D(this.models.length, options);
-        m.addMolData(data, format, options);
-        this.models.push(m);
-        return m;
+        try {
+            if (!data) {
+                console.error('No data provided to addModel');
+                return null;
+            }
+
+            if (!format) {
+                console.error('No format specified for addModel');
+                return null;
+            }
+
+            const modelOpt = this.getModelOpt(options);
+            if (!modelOpt) {
+                console.error('Invalid model options');
+                return null;
+            }
+
+            try {
+                const model = ModelDeMol.parseMolData(data, format, modelOpt);
+                if (!model) {
+                    console.error('Failed to parse model data');
+                    return null;
+                }
+
+                this.models.push(model);
+                model.globj(this.modelGroup, modelOpt);
+                this.render();
+                return model;
+            } catch (error) {
+                console.error('Error processing model data:', error);
+                return null;
+            }
+        } catch (error) {
+            console.error('Error in addModel:', error);
+            return null;
+        }
+    }
+
+    public removeModel(model?: Model3D | number) {
+        try {
+            if (model === undefined) {
+                console.error('No model specified for removal');
+                return;
+            }
+
+            let modelToRemove: Model3D | null = null;
+            if (typeof model === 'number') {
+                modelToRemove = this.getModel(model);
+            } else {
+                modelToRemove = model;
+            }
+
+            if (!modelToRemove) {
+                console.warn('Model not found for removal');
+                return;
+            }
+
+            try {
+                modelToRemove.removegl(this.modelGroup);
+                const index = this.models.indexOf(modelToRemove);
+                if (index > -1) {
+                    this.models.splice(index, 1);
+                }
+                this.render();
+            } catch (error) {
+                console.error('Error removing model:', error);
+            }
+        } catch (error) {
+            console.error('Error in removeModel:', error);
+        }
+    }
+
+    public removeAllModels() {
+        try {
+            for (let i = 0; i < this.models.length; i++) {
+                try {
+                    this.models[i].removegl(this.modelGroup);
+                } catch (error) {
+                    console.error('Error removing model at index ' + i + ':', error);
+                }
+            }
+            this.models = [];
+            this.render();
+        } catch (error) {
+            console.error('Error in removeAllModels:', error);
+        }
     }
     public addModels(data, format: string, options?) {
         options = this.getModelOpt(options);
@@ -2247,25 +2328,6 @@ export class ViewerDeMol {
         m.addMolData(data, format, options);
         this.models.push(m);
         return m;
-    }
-    public removeModel(model?: Model3D | number) {
-        model = this.getModel(model);
-        if (!model)
-            return;
-        model.removegl(this.modelGroup);
-        delete this.models[model.getID()];
-        while (this.models.length > 0
-            && typeof (this.models[this.models.length - 1]) === "undefined")
-            this.models.pop();
-        return this;
-    }
-    public removeAllModels() {
-        for (let i = 0; i < this.models.length; i++) {
-            const model = this.models[i];
-            if (model) model.removegl(this.modelGroup);
-        }
-        this.models.splice(0, this.models.length); 
-        return this;
     }
     public exportJSON(includeStyles: boolean, modelID: number) {
         const object: any = {};
@@ -2578,477 +2640,110 @@ export class ViewerDeMol {
     }
     public addSurface(stype: SurfaceType | string, style: SurfaceStyleSpec = {}, atomsel: AtomSelectionSpec = {},
         allsel?: AtomSelectionSpec, focus?: AtomSelectionSpec, surfacecallback?) {
-        const surfid = this.nextSurfID();
-        let mat = null;
-        const self = this;
-        let type: SurfaceType | 0 = SurfaceType.VDW;
-        if (typeof stype == "string") {
-            if (ViewerDeMol.surfaceTypeMap[stype.toUpperCase()] !== undefined)
-                type = ViewerDeMol.surfaceTypeMap[stype];
-            else {
-                console.log("Surface type : " + stype + " is not recognized");
+        try {
+            if (!stype) {
+                console.error('Invalid surface type provided to addSurface');
+                return null;
             }
-        } else if (typeof stype == "number") {
-            type = stype;
+
+            const surfID = this.nextSurfID();
+            if (!surfID) {
+                console.error('Failed to generate surface ID');
+                return null;
+            }
+
+            const surfaceType = typeof stype === 'string' ? ViewerDeMol.surfaceTypeMap[stype] : stype;
+            if (!surfaceType) {
+                console.error('Invalid surface type:', stype);
+                return null;
         }
-        let atomlist = null, focusSele = null;
-        const atomsToShow = ViewerDeMol.shallowCopy(this.getAtomsFromSel(atomsel));
-        if (!allsel) {
-            atomlist = atomsToShow;
-        }
-        else {
-            atomlist = ViewerDeMol.shallowCopy(this.getAtomsFromSel(allsel));
-        }
-        adjustVolumeStyle(style);
-        let symmetries = false;
-        let n;
-        for (n = 0; n < this.models.length; n++) {
-            if (this.models[n]) {
-                const symMatrices = this.models[n].getSymmetries();
-                if (symMatrices.length > 1 || (symMatrices.length == 1 && !(symMatrices[0].isIdentity()))) {
-                    symmetries = true;
-                    break;
-                }
-            }
-        }
-        const addSurfaceHelper = function addSurfaceHelper(surfobj, atomlist: AtomSpec[], atomsToShow: AtomSpec[]) {
-            if (!focus) {
-                focusSele = atomsToShow;
-            } else {
-                focusSele = ViewerDeMol.shallowCopy(self.getAtomsFromSel(focus));
-            }
-            let atom;
-            const extent = getExtent(atomsToShow, true);
-            if (style.map && style.map.prop) {
-                const prop = style.map.prop;
-                const scheme = getGradient(style.map.scheme || style.map.gradient || new Gradient.RWB());
-                let range = scheme.range();
-                if (!range) {
-                    range = getPropertyRange(atomsToShow, prop);
-                }
-                style.colorscheme = { prop: prop as string, gradient: scheme };
-            }
-            for (let i = 0, il = atomlist.length; i < il; i++) {
-                atom = atomlist[i];
-                atom.surfaceColor = getColorFromStyle(atom, style);
-            }
-            const totalVol = ViewerDeMol.volume(extent); 
-            const extents = self.carveUpExtent(extent, atomlist, atomsToShow);
-            if (focusSele && focusSele.length && focusSele.length > 0) {
-                const seleExtent = getExtent(focusSele, true);
-                const sortFunc = function (a, b) {
-                    const distSq = function (ex, sele) {
-                        const e = ex.extent;
-                        const x = e[1][0] - e[0][0];
-                        const y = e[1][1] - e[0][1];
-                        const z = e[1][2] - e[0][2];
-                        let dx = (x - sele[2][0]);
-                        dx *= dx;
-                        let dy = (y - sele[2][1]);
-                        dy *= dy;
-                        let dz = (z - sele[2][2]);
-                        dz *= dz;
-                        return dx + dy + dz;
-                    };
-                    const d1 = distSq(a, seleExtent);
-                    const d2 = distSq(b, seleExtent);
-                    return d1 - d2;
-                };
-                extents.sort(sortFunc);
-            }
-            const reducedAtoms = [];
-            for (let i = 0, il = atomlist.length; i < il; i++) {
-                atom = atomlist[i];
-                reducedAtoms[i] = {
-                    x: atom.x,
-                    y: atom.y,
-                    z: atom.z,
-                    serial: i,
-                    elem: atom.elem
-                };
-            }
-            const sync = !!(syncSurface);
-            if (sync) { 
-                const callSyncHelper = function callSyncHelper(i) {
-                    return new Promise<void>(function (resolve) {
-                        let VandF = ViewerDeMol.generateMeshSyncHelper(type as SurfaceType, extents[i].extent,
-                            extents[i].atoms, extents[i].toshow, reducedAtoms,
-                            totalVol);
-                        const VandFs = splitMesh({ vertexArr: VandF.vertices, faceArr: VandF.faces });
-                        for (let vi = 0, vl = VandFs.length; vi < vl; vi++) {
-                            VandF = {
-                                vertices: VandFs[vi].vertexArr,
-                                faces: VandFs[vi].faceArr
-                            };
-                            const mesh = ViewerDeMol.generateSurfaceMesh(atomlist, VandF, mat);
-                            mergeGeos(surfobj.geo, mesh);
-                        }
-                        self.render();
-                        resolve();
-                    });
-                };
-                const promises = [];
-                for (let i = 0; i < extents.length; i++) {
-                    promises.push(callSyncHelper(i));
-                }
-                return Promise.all(promises)
-                    .then(function () {
-                        surfobj.done = true;
-                        return Promise.resolve(surfid);
-                    });
-            } else { 
-                const workers = [];
-                if (type < 0)
-                    type = 0; 
-                for (let i = 0, il = ViewerDeMol.numWorkers; i < il; i++) {
-                    const w = new Worker($DeMol.SurfaceWorker);
-                    workers.push(w);
-                    w.postMessage({
-                        'type': -1,
-                        'atoms': reducedAtoms,
-                        'volume': totalVol
-                    });
-                }
-                return new Promise(function (resolve, reject) {
-                    let cnt = 0;
-                    const releaseMemory = function () {
-                        if (!workers || !workers.length) return;
-                        workers.forEach(function (worker) {
-                            if (worker && worker.terminate) {
-                                worker.terminate();
-                            }
-                        });
-                    };
-                    const rfunction = function (event) {
-                        const VandFs = splitMesh({
-                            vertexArr: event.data.vertices,
-                            faceArr: event.data.faces
-                        });
-                        for (let i = 0, vl = VandFs.length; i < vl; i++) {
-                            const VandF = {
-                                vertices: VandFs[i].vertexArr,
-                                faces: VandFs[i].faceArr
-                            };
-                            const mesh = ViewerDeMol.generateSurfaceMesh(atomlist, VandF, mat);
-                            mergeGeos(surfobj.geo, mesh);
-                        }
-                        self.render();
-                        cnt++;
-                        if (cnt == extents.length) {
-                            surfobj.done = true;
-                            releaseMemory();
-                            resolve(surfid); 
-                        }
-                    };
-                    const efunction = function (event) {
-                        releaseMemory();
-                        console.log(event.message + " (" + event.filename + ":" + event.lineno + ")");
-                        reject(event);
-                    };
-                    for (let i = 0; i < extents.length; i++) {
-                        const worker = workers[i % workers.length];
-                        worker.onmessage = rfunction;
-                        worker.onerror = efunction;
-                        worker.postMessage({
-                            'type': type,
-                            'expandedExtent': extents[i].extent,
-                            'extendedAtoms': extents[i].atoms,
-                            'atomsToShow': extents[i].toshow
-                        });
+
+        this.glviewer1.setAutoEyeSeparation(false);
+        this.glviewer2.setAutoEyeSeparation(true);
+        this.glviewer1.linkViewer(this.glviewer2);
+        this.glviewer2.linkViewer(this.glviewer1);
+
+        const methods = Object.getOwnPropertyNames(this.glviewer1.__proto__) 
+            .filter(function (property) {
+                return typeof that.glviewer1[property] == 'function';
+            });
+
+        for (let i = 0; i < methods.length; i++) { 
+            this[methods[i]] = (function (method) {
+                return function () {
+                    try {
+                        const m1 = this.glviewer1[method].apply(this.glviewer1, arguments);
+                        const m2 = this.glviewer2[method].apply(this.glviewer2, arguments);
+                        return [m1, m2];
+                    } catch (error) {
+                        console.error(`Error executing method ${method}:`, error);
+                        return [null, null];
                     }
-                });
+                };
+            })(methods[i]);
+        }
+
+        this.setCoordinates = function (models, data, format) { 
+            try {
+                if (!Array.isArray(models)) {
+                    console.error('Invalid models array provided to setCoordinates');
+                    return;
+                }
+
+                for (let i = 0; i < models.length; i++) {
+                    if (models[i]) {
+                        models[i].setCoordinates(data, format);
+                    }
+                }
+            } catch (error) {
+                console.error('Error in setCoordinates:', error);
             }
         };
-        style = style || {};
-        mat = ViewerDeMol.getMatWithStyle(style);
-        const surfobj: any = [];
-        surfobj.style = style;
-        surfobj.atomsel = atomsel;
-        surfobj.allsel = allsel;
-        surfobj.focus = focus;
-        let promise = null;
-        if (symmetries) { 
-            const modelsAtomList = {};
-            const modelsAtomsToShow = {};
-            for (n = 0; n < this.models.length; n++) {
-                modelsAtomList[n] = [];
-                modelsAtomsToShow[n] = [];
+
+        this.surfacesFinished = function () {
+            try {
+                return this.glviewer1.surfacesFinished() && this.glviewer2.surfacesFinished();
+            } catch (error) {
+                console.error('Error in surfacesFinished:', error);
+                return false;
             }
-            for (n = 0; n < atomlist.length; n++) {
-                modelsAtomList[atomlist[n].model].push(atomlist[n]);
+        };
+
+        this.isAnimated = function () {
+            try {
+                return this.glviewer1.isAnimated() || this.glviewer2.isAnimated();
+            } catch (error) {
+                console.error('Error in isAnimated:', error);
+                return false;
             }
-            for (n = 0; n < atomsToShow.length; n++) {
-                modelsAtomsToShow[atomsToShow[n].model].push(atomsToShow[n]);
-            }
-            const promises = [];
-            for (n = 0; n < this.models.length; n++) {
-                if (modelsAtomsToShow[n].length > 0) {
-                    surfobj.push({
-                        geo: new Geometry(true),
-                        mat: mat,
-                        done: false,
-                        finished: false,
-                        symmetries: this.models[n].getSymmetries()
-                    });
-                    promises.push(addSurfaceHelper(surfobj[surfobj.length - 1], modelsAtomList[n], modelsAtomsToShow[n]));
+        };
+
+        this.render = function (callback) {
+            try {
+                this.glviewer1.render();
+                this.glviewer2.render();
+                if (typeof callback === 'function') {
+                    callback(this); 
                 }
+            } catch (error) {
+                console.error('Error in render:', error);
             }
-            promise = Promise.all(promises);
-        }
-        else {
-            surfobj.push({
-                geo: new Geometry(true),
-                mat: mat,
-                done: false,
-                finished: false,
-                symmetries: [new Matrix4()]
-            });
-            promise = addSurfaceHelper(surfobj[surfobj.length - 1], atomlist, atomsToShow);
-        }
-        this.surfaces[surfid] = surfobj;
-        promise.surfid = surfid;
-        if (surfacecallback && typeof (surfacecallback) == "function") {
-            promise.then(function (surfid) {
-                surfacecallback(surfid);
-            });
-            return surfid;
-        }
-        else {
-            return promise;
-        }
-    }
-    public setSurfaceMaterialStyle(surf: number, style: SurfaceStyleSpec) {
-        adjustVolumeStyle(style);
-        if (this.surfaces[surf]) {
-            const surfArr = this.surfaces[surf];
-            for (let i = 0; i < surfArr.length; i++) {
-                const mat = surfArr[i].mat = ViewerDeMol.getMatWithStyle(style);
-                surfArr[i].mat.side = FrontSide;
-                if (style.color) {
-                    surfArr[i].mat.color = CC.color(style.color);
-                    surfArr[i].geo.colorsNeedUpdate = true;
-                    const c = CC.color(style.color);
-                    surfArr[i].geo.setColor(c);
-                }
-                else if (mat.voldata && mat.volscheme) {
-                    const scheme = mat.volscheme;
-                    const voldata = mat.voldata;
-                    const cc = CC;
-                    const range = scheme.range() || [-1, 1];
-                    surfArr[i].geo.setColors(function (x, y, z) {
-                        const val = voldata.getVal(x, y, z);
-                        const col = cc.color(scheme.valueToHex(val, range));
-                        return col;
-                    });
-                } else {
-                    surfArr[i].geo.colorsNeedUpdate = true;
-                    for(const geo of  surfArr[i].geo.geometryGroups ) {
-                        for(let j = 0; j < geo.vertices; j++) {
-                            const c = getColorFromStyle(geo.atomArray[j],style);
-                            const off = 3*j;
-                            geo.colorArray[off] = c.r;
-                            geo.colorArray[off+1] = c.g;
-                            geo.colorArray[off+2] = c.b;
-                        }
-                    }
-                }
-                surfArr[i].finished = false; 
+        };
+
+        this.getCanvas = function () {
+            try {
+                return this.glviewer1.getCanvas(); 
+            } catch (error) {
+                console.error('Error in getCanvas:', error);
+                return null;
             }
-        }
+        };
+
         return this;
+    } catch (error) {
+        console.error('Error creating stereo viewer:', error);
+        return null;
     }
-    public getSurface(surf: number) {
-        return this.surfaces[surf];
-    }
-    public removeSurface(surf: number) {
-        const surfArr = this.surfaces[surf];
-        for (let i = 0; i < surfArr.length; i++) {
-            if (surfArr[i] && surfArr[i].lastGL) {
-                if (surfArr[i].geo !== undefined)
-                    surfArr[i].geo.dispose();
-                if (surfArr[i].mat !== undefined)
-                    surfArr[i].mat.dispose();
-                this.modelGroup.remove(surfArr[i].lastGL); 
-            }
-        }
-        delete this.surfaces[surf];
-        this.show();
-        return this;
-    }
-    public removeAllSurfaces() {
-        for (const n in this.surfaces) {
-            if (!this.surfaces.hasOwnProperty(n)) continue;
-            const surfArr = this.surfaces[n];
-            for (let i = 0; i < surfArr.length; i++) {
-                if (surfArr[i] && surfArr[i].lastGL) {
-                    if (surfArr[i].geo !== undefined)
-                        surfArr[i].geo.dispose();
-                    if (surfArr[i].mat !== undefined)
-                        surfArr[i].mat.dispose();
-                    this.modelGroup.remove(surfArr[i].lastGL); 
-                }
-            }
-            delete this.surfaces[n];
-        }
-        this.show();
-        return this;
-    }
-    public jmolMoveTo() {
-        const pos = this.modelGroup.position;
-        let ret = "center { " + (-pos.x) + " " + (-pos.y) + " " + (-pos.z)
-            + " }; ";
-        const q = this.rotationGroup.quaternion;
-        ret += "moveto .5 quaternion { " + q.x + " " + q.y + " " + q.z
-            + " " + q.w + " };";
-        return ret;
-    }
-    public clear() {
-        this.removeAllSurfaces();
-        this.removeAllModels();
-        this.removeAllLabels();
-        this.removeAllShapes();
-        this.show();
-        return this;
-    }
-    public mapAtomProperties(props, sel: AtomSelectionSpec) {
-        sel = sel || {};
-        const atoms = this.getAtomsFromSel(sel);
-        if (typeof (props) == "function") {
-            for (let a = 0, numa = atoms.length; a < numa; a++) {
-                const atom = atoms[a];
-                props(atom);
-            }
-        }
-        else {
-            for (let a = 0, numa = atoms.length; a < numa; a++) {
-                const atom = atoms[a];
-                for (let i = 0, n = props.length; i < n; i++) {
-                    const prop = props[i];
-                    if (prop.props) {
-                        for (const p in prop.props) {
-                            if (prop.props.hasOwnProperty(p)) {
-                                if (this.atomIsSelected(atom, prop)) {
-                                    if (!atom.properties)
-                                        atom.properties = {};
-                                    atom.properties[p] = prop.props[p];
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return this;
-    }
-    public linkViewer(otherviewer: ViewerDeMol) {
-        this.linkedViewers.push(otherviewer);
-        return this;
-    }
-    public getPerceivedDistance() {
-        return this.CAMERA_Z - this.rotationGroup.position.z;
-    }
-    public setPerceivedDistance(dist: number) {
-        this.rotationGroup.position.z = this.CAMERA_Z - dist;
-    }
-    public setAutoEyeSeparation(isright: boolean, x: number) {
-        const dist = this.getPerceivedDistance();
-        if (!x) x = 5.0;
-        if (isright || this.camera.position.x > 0) 
-            this.camera.position.x = dist * Math.tan(DEGREES_TO_RADIANS * x);
-        else
-            this.camera.position.x = -dist * Math.tan(DEGREES_TO_RADIANS * x);
-        this.camera.lookAt(new Vector3(0, 0, this.rotationGroup.position.z));
-        return this.camera.position.x;
-    }
-    public setDefaultCartoonQuality(val: number) {
-        this.config.cartoonQuality = val;
-    }
-}
-export function createViewer(element, config?: ViewerSpec) {
-    element = getElement(element);
-    if (!element) return;
-    config = config || {};
-    try {
-        const viewer = new ViewerDeMol(element, config);
-        return viewer;
-    }
-    catch (e) {
-        throw "error creating viewer: " + e;
-    }
-}
-export function createViewerGrid(element, config: ViewerGridSpec = {}, viewer_config: ViewerSpec = {}) {
-    element = getElement(element);
-    if (!element) return;
-    const viewers = [];
-    const canvas = document.createElement('canvas');
-    viewer_config.rows = config.rows;
-    viewer_config.cols = config.cols;
-    viewer_config.control_all = config.control_all != undefined ? config.control_all : false;
-    element.appendChild(canvas);
-    try {
-        for (let r = 0; r < config.rows; r++) {
-            const row = [];
-            for (let c = 0; c < config.cols; c++) {
-                viewer_config.row = r;
-                viewer_config.col = c;
-                viewer_config.canvas = canvas;
-                viewer_config.viewers = viewers;
-                viewer_config.control_all = config.control_all;
-                const viewer = createViewer(element, extend({}, viewer_config));
-                row.push(viewer);
-            }
-            viewers.unshift(row); 
-        }
-    } catch (e) {
-        throw "error creating viewer grid: " + e;
-    }
-    return viewers;
-}
-export function createStereoViewer(element) {
-    const that = this;
-    element = getElement(element);
-    if (!element) return;
-    const viewers = createViewerGrid(element, { rows: 1, cols: 2, control_all: true });
-    this.glviewer1 = viewers[0][0];
-    this.glviewer2 = viewers[0][1];
-    this.glviewer1.setAutoEyeSeparation(false);
-    this.glviewer2.setAutoEyeSeparation(true);
-    this.glviewer1.linkViewer(this.glviewer2);
-    this.glviewer2.linkViewer(this.glviewer1);
-    const methods = Object.getOwnPropertyNames(this.glviewer1.__proto__) 
-        .filter(function (property) {
-            return typeof that.glviewer1[property] == 'function';
-        });
-    for (let i = 0; i < methods.length; i++) { 
-        this[methods[i]] = (function (method) {
-            return function () {
-                const m1 = this.glviewer1[method].apply(this.glviewer1, arguments);
-                const m2 = this.glviewer2[method].apply(this.glviewer2, arguments);
-                return [m1, m2];
-            };
-        })(methods[i]);
-    }
-    this.setCoordinates = function (models, data, format) { 
-        for (let i = 0; i < models.length; i++) {
-            models[i].setCoordinates(data, format);
-        }
-    };
-    this.surfacesFinished = function () {
-        return this.glviewer1.surfacesFinished() && this.glviewer2.surfacesFinished();
-    };
-    this.isAnimated = function () {
-        return this.glviewer1.isAnimated() || this.glviewer2.isAnimated();
-    };
-    this.render = function (callback) {
-        this.glviewer1.render();
-        this.glviewer2.render();
-        if (callback) {
-            callback(this); 
-        }
-    };
-    this.getCanvas = function () {
-        return this.glviewer1.getCanvas(); 
-    };
 }
 export interface OutlineStyle {
     width?: number;

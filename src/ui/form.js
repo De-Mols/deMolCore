@@ -315,58 +315,86 @@ $DeMol.UI.Form = (function () {
             }
         }
         var checkInput = this.checkInput = function () {
-            var inputString = input.val();
-            if (validationType == 'number') {
-                if (checkInputNumber()) {
-                    alertBox.hide();
-                    return true;
-                } else {
+            try {
+                var inputString = input?.val();
+                if (!inputString) {
                     error(alertMessage['invalid-input']);
                     return false;
                 }
-            } else if (validationType == 'float') {
-                if (checkInputFloat()) {
-                    alertBox.hide();
-                    return true;
-                } else {
-                    error(alertMessage['invalid-input']);
-                    return false;
-                }
-            } else if (validationType == 'range') {
-                if (checkRangeTokens(inputString)) {
-                    if (checkList(inputString)) {
+
+                if (validationType == 'number') {
+                    if (checkInputNumber()) {
                         alertBox.hide();
                         return true;
                     } else {
                         error(alertMessage['invalid-input']);
                         return false;
                     }
+                } else if (validationType == 'float') {
+                    if (checkInputFloat()) {
+                        alertBox.hide();
+                        return true;
+                    } else {
+                        error(alertMessage['invalid-input']);
+                        return false;
+                    }
+                } else if (validationType == 'range') {
+                    if (checkRangeTokens(inputString)) {
+                        if (checkList(inputString)) {
+                            alertBox.hide();
+                            return true;
+                        } else {
+                            error(alertMessage['invalid-input']);
+                            return false;
+                        }
+                    } else {
+                        error(alertMessage['invalid-input']);
+                        return false;
+                    }
                 } else {
-                    error(alertMessage['invalid-input']);
-                    return false;
+                    return true;
                 }
-            } else {
-                return true;
+            } catch (error) {
+                console.error('Error in checkInput:', error);
+                error(alertMessage['invalid-input']);
+                return false;
             }
         }
         this.validateOnlyNumber = function (floatType = false) {
-            if (floatType) {
-                validationType = 'float';
-            } else {
-                validationType = 'number';
+            try {
+                if (!input) {
+                    console.error('Input element not initialized');
+                    return;
+                }
+
+                validationType = floatType ? 'float' : 'number';
+                input.on('keydown keyup paste cut', function () {
+                    checkInput();
+                });
+            } catch (error) {
+                console.error('Error in validateOnlyNumber:', error);
             }
-            input.on('keydown keyup paste cut', function () {
-                checkInput();
-            });
         }
         this.validateInputRange = function () {
-            validationType = 'range';
-            input.on('keydown keyup paste cut', () => {
-                checkInput();
-            });
+            try {
+                if (!input) {
+                    console.error('Input element not initialized');
+                    return;
+                }
+
+                validationType = 'range';
+                input.on('keydown keyup paste cut', () => {
+                    checkInput();
+                });
+            } catch (error) {
+                console.error('Error in validateInputRange:', error);
+            }
         }
         this.isEmpty = function () {
-            if (control.value == "") {
+            try {
+                return !control?.value || control.value === "";
+            } catch (error) {
+                console.error('Error in isEmpty:', error);
                 return true;
             }
         }

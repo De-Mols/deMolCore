@@ -799,191 +799,220 @@ export class ModelDeMol {
         }
     }
     private createMolObj(atoms: AtomSpec[], options?) {
-        options = options || {};
-        const ret = new Object3D();
-        const cartoonAtoms = [];
-        const lineGeometries: Record<number, Geometry> = {};
-        const crossGeometries: Record<number, Geometry> = {};
-        let drawSphereFunc = this.drawAtomSphere;
-        let sphereGeometry: Geometry = null;
-        let stickGeometry: Geometry = null;
-        if (options.supportsImposters) {
-            drawSphereFunc = this.drawAtomImposter;
-            sphereGeometry = new Geometry(true);
-            sphereGeometry.imposter = true;
-            stickGeometry = new Geometry(true, true);
-            stickGeometry.imposter = true;
-            stickGeometry.sphereGeometry = new Geometry(true); 
-            stickGeometry.sphereGeometry.imposter = true;
-            stickGeometry.drawnCaps = {};
-        }
-        else if (options.supportsAIA) {
-            drawSphereFunc = this.drawAtomInstanced;
-            sphereGeometry = new Geometry(false, true, true);
-            sphereGeometry.instanced = true;
-            stickGeometry = new Geometry(true); 
-        } else {
-            sphereGeometry = new Geometry(true);
-            stickGeometry = new Geometry(true);
-        }
-        let i, j, n, testOpacities;
-        const opacities: any = {};
-        const range = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
-        for (i = 0, n = atoms.length; i < n; i++) {
-            const atom = atoms[i];
-            if (atom && atom.style) {
-                if ((atom.clickable || atom.hoverable) && atom.intersectionShape === undefined)
-                    atom.intersectionShape = { sphere: [], cylinder: [], line: [], triangle: [] };
-                testOpacities = { line: undefined, cross: undefined, stick: undefined, sphere: undefined };
-                for (j in testOpacities) {
-                    if (atom.style[j]) {
-                        if (atom.style[j].opacity)
-                            testOpacities[j] = parseFloat(atom.style[j].opacity);
-                        else
-                            testOpacities[j] = 1;
-                    } else testOpacities[j] = undefined;
-                    if (opacities[j]) {
-                        if (testOpacities[j] != undefined && opacities[j] != testOpacities[j]) {
-                            console.log("Warning: " + j + " opacity is ambiguous");
-                            opacities[j] = 1;
+        try {
+            options = options || {};
+            const ret = new Object3D();
+            const cartoonAtoms = [];
+            const lineGeometries: Record<number, Geometry> = {};
+            const crossGeometries: Record<number, Geometry> = {};
+            let drawSphereFunc = this.drawAtomSphere;
+            let sphereGeometry: Geometry = null;
+            let stickGeometry: Geometry = null;
+
+            if (!atoms || !Array.isArray(atoms)) {
+                console.error('Invalid atoms array provided to createMolObj');
+                return ret;
+            }
+
+            if (options.supportsImposters) {
+                drawSphereFunc = this.drawAtomImposter;
+                sphereGeometry = new Geometry(true);
+                sphereGeometry.imposter = true;
+                stickGeometry = new Geometry(true, true);
+                stickGeometry.imposter = true;
+                stickGeometry.sphereGeometry = new Geometry(true); 
+                stickGeometry.sphereGeometry.imposter = true;
+                stickGeometry.drawnCaps = {};
+            }
+            else if (options.supportsAIA) {
+                drawSphereFunc = this.drawAtomInstanced;
+                sphereGeometry = new Geometry(false, true, true);
+                sphereGeometry.instanced = true;
+                stickGeometry = new Geometry(true); 
+            } else {
+                sphereGeometry = new Geometry(true);
+                stickGeometry = new Geometry(true);
+            }
+
+            let i, j, n, testOpacities;
+            const opacities: any = {};
+            const range = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
+
+            for (i = 0, n = atoms.length; i < n; i++) {
+                try {
+                    const atom = atoms[i];
+                    if (!atom) continue;
+
+                    if (atom.style) {
+                        if ((atom.clickable || atom.hoverable) && atom.intersectionShape === undefined) {
+                            atom.intersectionShape = { sphere: [], cylinder: [], line: [], triangle: [] };
                         }
-                    } else opacities[j] = testOpacities[j];
-                }
-                drawSphereFunc.call(this, atom, sphereGeometry);
-                this.drawAtomClickSphere(atom);
-                this.drawAtomCross(atom, crossGeometries);
-                this.drawBondLines(atom, atoms, lineGeometries);
-                this.drawBondSticks(atom, atoms, stickGeometry);
-                if (typeof (atom.style.cartoon) !== "undefined" && !atom.style.cartoon.hidden) {
-                    if (atom.style.cartoon.color === "spectrum" && typeof (atom.resi) === "number" && !atom.hetflag) {
-                        if (atom.resi < range[0])
-                            range[0] = atom.resi;
-                        if (atom.resi > range[1])
-                            range[1] = atom.resi;
+                        testOpacities = { line: undefined, cross: undefined, stick: undefined, sphere: undefined };
+                        
+                        for (j in testOpacities) {
+                            if (atom.style[j]) {
+                                if (atom.style[j].opacity) {
+                                    testOpacities[j] = parseFloat(atom.style[j].opacity);
+                                } else {
+                                    testOpacities[j] = 1;
+                                }
+                            } else {
+                                testOpacities[j] = undefined;
+                            }
+                            
+                            if (opacities[j]) {
+                                if (testOpacities[j] != undefined && opacities[j] != testOpacities[j]) {
+                                    console.warn("Warning: " + j + " opacity is ambiguous");
+                                    opacities[j] = 1;
+                                }
+                            } else {
+                                opacities[j] = testOpacities[j];
+                            }
+                        }
+
+                        drawSphereFunc.call(this, atom, sphereGeometry);
+                        this.drawAtomClickSphere(atom);
+                        this.drawAtomCross(atom, crossGeometries);
+                        this.drawBondLines(atom, atoms, lineGeometries);
+                        this.drawBondSticks(atom, atoms, stickGeometry);
+
+                        if (typeof (atom.style.cartoon) !== "undefined" && !atom.style.cartoon.hidden) {
+                            if (atom.style.cartoon.color === "spectrum" && typeof (atom.resi) === "number" && !atom.hetflag) {
+                                if (atom.resi < range[0]) range[0] = atom.resi;
+                                if (atom.resi > range[1]) range[1] = atom.resi;
+                            }
+                            cartoonAtoms.push(atom);
+                        }
                     }
-                    cartoonAtoms.push(atom);
+                } catch (error) {
+                    console.error(`Error processing atom ${i}:`, error);
+                    continue;
                 }
             }
-        }
-        if (cartoonAtoms.length > 0) {
-            drawCartoon(ret, cartoonAtoms, range, this.defaultCartoonQuality);
-        }
-        if (sphereGeometry && sphereGeometry.vertices > 0) {
-            sphereGeometry.initTypedArrays();
-            let sphereMaterial = null;
-            let sphere = null;
-            if (sphereGeometry.imposter) {
-                sphereMaterial = new SphereImposterMaterial({
-                    ambient: 0x000000,
-                    vertexColors: true,
-                    reflectivity: 0
-                });
+
+            if (cartoonAtoms.length > 0) {
+                drawCartoon(ret, cartoonAtoms, range, this.defaultCartoonQuality);
             }
-            else if (sphereGeometry.instanced) {
-                sphere = new Geometry(true);
-                GLDraw.drawSphere(sphere, { x: 0, y: 0, z: 0 }, 1, new Color(0.5, 0.5, 0.5));
-                sphere.initTypedArrays();
-                sphereMaterial = new InstancedMaterial({
-                    sphereMaterial: new MeshLambertMaterial({
+            if (sphereGeometry && sphereGeometry.vertices > 0) {
+                sphereGeometry.initTypedArrays();
+                let sphereMaterial = null;
+                let sphere = null;
+                if (sphereGeometry.imposter) {
+                    sphereMaterial = new SphereImposterMaterial({
+                        ambient: 0x000000,
+                        vertexColors: true,
+                        reflectivity: 0
+                    });
+                }
+                else if (sphereGeometry.instanced) {
+                    sphere = new Geometry(true);
+                    GLDraw.drawSphere(sphere, { x: 0, y: 0, z: 0 }, 1, new Color(0.5, 0.5, 0.5));
+                    sphere.initTypedArrays();
+                    sphereMaterial = new InstancedMaterial({
+                        sphereMaterial: new MeshLambertMaterial({
+                            ambient: 0x000000,
+                            vertexColors: true,
+                            reflectivity: 0,
+                        }),
+                        sphere: sphere
+                    });
+                }
+                else { 
+                    sphereMaterial = new MeshLambertMaterial({
                         ambient: 0x000000,
                         vertexColors: true,
                         reflectivity: 0,
-                    }),
-                    sphere: sphere
-                });
+                    });
+                }
+                if (opacities.sphere < 1 && opacities.sphere >= 0) {
+                    sphereMaterial.transparent = true;
+                    sphereMaterial.opacity = opacities.sphere;
+                }
+                sphere = new Mesh(sphereGeometry, sphereMaterial);
+                ret.add(sphere);
             }
-            else { 
-                sphereMaterial = new MeshLambertMaterial({
-                    ambient: 0x000000,
-                    vertexColors: true,
-                    reflectivity: 0,
-                });
-            }
-            if (opacities.sphere < 1 && opacities.sphere >= 0) {
-                sphereMaterial.transparent = true;
-                sphereMaterial.opacity = opacities.sphere;
-            }
-            sphere = new Mesh(sphereGeometry, sphereMaterial);
-            ret.add(sphere);
-        }
-        if (stickGeometry.vertices > 0) {
-            let stickMaterial = null;
-            let ballMaterial = null;
-            let balls = stickGeometry.sphereGeometry;
-            if (!balls || typeof (balls.vertices) === 'undefined' || balls.vertices == 0) balls = null; 
-            stickGeometry.initTypedArrays();
-            if (balls) balls.initTypedArrays();
-            const matvals = { ambient: 0x000000, vertexColors: true, reflectivity: 0 };
-            if (stickGeometry.imposter) {
-                stickMaterial = new StickImposterMaterial(matvals);
-                ballMaterial = new SphereImposterMaterial(matvals);
-            } else {
-                stickMaterial = new MeshLambertMaterial(matvals);
-                ballMaterial = new MeshLambertMaterial(matvals);
-                if (stickMaterial.wireframe) {
-                    stickGeometry.setUpWireframe();
-                    if (balls) balls.setUpWireframe();
+            if (stickGeometry.vertices > 0) {
+                let stickMaterial = null;
+                let ballMaterial = null;
+                let balls = stickGeometry.sphereGeometry;
+                if (!balls || typeof (balls.vertices) === 'undefined' || balls.vertices == 0) balls = null; 
+                stickGeometry.initTypedArrays();
+                if (balls) balls.initTypedArrays();
+                const matvals = { ambient: 0x000000, vertexColors: true, reflectivity: 0 };
+                if (stickGeometry.imposter) {
+                    stickMaterial = new StickImposterMaterial(matvals);
+                    ballMaterial = new SphereImposterMaterial(matvals);
+                } else {
+                    stickMaterial = new MeshLambertMaterial(matvals);
+                    ballMaterial = new MeshLambertMaterial(matvals);
+                    if (stickMaterial.wireframe) {
+                        stickGeometry.setUpWireframe();
+                        if (balls) balls.setUpWireframe();
+                    }
+                }
+                if (opacities.stick < 1 && opacities.stick >= 0) {
+                    stickMaterial.transparent = true;
+                    stickMaterial.opacity = opacities.stick;
+                    ballMaterial.transparent = true;
+                    ballMaterial.opacity = opacities.stick;
+                }
+                const sticks = new Mesh(stickGeometry, stickMaterial);
+                ret.add(sticks);
+                if (balls) {
+                    const stickspheres = new Mesh(balls, ballMaterial);
+                    ret.add(stickspheres);
                 }
             }
-            if (opacities.stick < 1 && opacities.stick >= 0) {
-                stickMaterial.transparent = true;
-                stickMaterial.opacity = opacities.stick;
-                ballMaterial.transparent = true;
-                ballMaterial.opacity = opacities.stick;
-            }
-            const sticks = new Mesh(stickGeometry, stickMaterial);
-            ret.add(sticks);
-            if (balls) {
-                const stickspheres = new Mesh(balls, ballMaterial);
-                ret.add(stickspheres);
-            }
-        }
-        let linewidth;
-        for (i in lineGeometries) {
-            if (lineGeometries.hasOwnProperty(i)) {
-                linewidth = i;
-                const lineMaterial = new LineBasicMaterial({
-                    linewidth: linewidth,
-                    vertexColors: true
-                });
-                if (opacities.line < 1 && opacities.line >= 0) {
-                    lineMaterial.transparent = true;
-                    lineMaterial.opacity = opacities.line;
+            let linewidth;
+            for (i in lineGeometries) {
+                if (lineGeometries.hasOwnProperty(i)) {
+                    linewidth = i;
+                    const lineMaterial = new LineBasicMaterial({
+                        linewidth: linewidth,
+                        vertexColors: true
+                    });
+                    if (opacities.line < 1 && opacities.line >= 0) {
+                        lineMaterial.transparent = true;
+                        lineMaterial.opacity = opacities.line;
+                    }
+                    lineGeometries[i].initTypedArrays();
+                    const line = new Line(lineGeometries[i], lineMaterial as Material, LineStyle.LinePieces);
+                    ret.add(line);
                 }
-                lineGeometries[i].initTypedArrays();
-                const line = new Line(lineGeometries[i], lineMaterial as Material, LineStyle.LinePieces);
-                ret.add(line);
             }
-        }
-        for (i in crossGeometries) {
-            if (crossGeometries.hasOwnProperty(i)) {
-                linewidth = i;
-                const crossMaterial = new LineBasicMaterial({
-                    linewidth: linewidth,
-                    vertexColors: true
-                });
-                if (opacities.cross < 1 && opacities.cross >= 0) {
-                    crossMaterial.transparent = true;
-                    crossMaterial.opacity = opacities.cross;
+            for (i in crossGeometries) {
+                if (crossGeometries.hasOwnProperty(i)) {
+                    linewidth = i;
+                    const crossMaterial = new LineBasicMaterial({
+                        linewidth: linewidth,
+                        vertexColors: true
+                    });
+                    if (opacities.cross < 1 && opacities.cross >= 0) {
+                        crossMaterial.transparent = true;
+                        crossMaterial.opacity = opacities.cross;
+                    }
+                    crossGeometries[i].initTypedArrays();
+                    const cross = new Line(crossGeometries[i], crossMaterial as Material, LineStyle.LinePieces);
+                    ret.add(cross);
                 }
-                crossGeometries[i].initTypedArrays();
-                const cross = new Line(crossGeometries[i], crossMaterial as Material, LineStyle.LinePieces);
-                ret.add(cross);
             }
-        }
-        if (this.dontDuplicateAtoms && this.modelData.symmetries && this.modelData.symmetries.length > 0) {
-            const finalRet = new Object3D();
-            let t;
-            for (t = 0; t < this.modelData.symmetries.length; t++) {
-                let transformedRet = new Object3D();
-                transformedRet = ret.clone();
-                transformedRet.matrix.copy(this.modelData.symmetries[t]);
-                transformedRet.matrixAutoUpdate = false;
-                finalRet.add(transformedRet);
+            if (this.dontDuplicateAtoms && this.modelData.symmetries && this.modelData.symmetries.length > 0) {
+                const finalRet = new Object3D();
+                let t;
+                for (t = 0; t < this.modelData.symmetries.length; t++) {
+                    let transformedRet = new Object3D();
+                    transformedRet = ret.clone();
+                    transformedRet.matrix.copy(this.modelData.symmetries[t]);
+                    transformedRet.matrixAutoUpdate = false;
+                    finalRet.add(transformedRet);
+                }
+                return finalRet;
             }
-            return finalRet;
+            return ret;
+        } catch (error) {
+            console.error('Error creating molObj:', error);
+            return new Object3D();
         }
-        return ret;
     }
     public getInternalState() {
         return {
@@ -1083,105 +1112,100 @@ export class ModelDeMol {
             }
         }
     }
-    public setFrame(framenum: number, viewer?: Viewer3D) { 
-        const numFrames = this.getNumFrames();
-        const model = this;
-        return new Promise<void>(function (resolve, reject) {
-            if (numFrames == 0) {
-                resolve();
+    public setFrame(framenum: number, viewer?: Viewer3D) {
+        try {
+            if (framenum === undefined || framenum === null) {
+                console.error('Invalid frame number provided to setFrame');
+                return;
             }
-            if (framenum < 0 || framenum >= numFrames) {
-                framenum = numFrames - 1;
+
+            if (framenum < 0 || framenum >= this.frames.length) {
+                console.error('Frame number out of range:', framenum);
+                return;
             }
-            if (model.frames.url != undefined) {
-                const url = model.frames.url;
-                getbin(url + "/traj/frame/" + framenum + "/" + model.frames.path, undefined, 'POST', undefined).then(function (buffer) {
-                    const values = new Float32Array(buffer, 44);
-                    let count = 0;
-                    for (let i = 0; i < model.atoms.length; i++) {
-                        model.atoms[i].x = values[count++];
-                        model.atoms[i].y = values[count++];
-                        model.atoms[i].z = values[count++];
-                    }
-                    if (model.box && model.atomdfs) {
-                        model.adjustCoordinatesToBox();
-                    }
-                    resolve();
-                }).catch(reject);
-            }
-            else {
-                model.atoms = model.frames[framenum];
-                resolve();
-            }
-            model.molObj = null;
-            if (model.modelDatas && framenum < model.modelDatas.length) {
-                model.modelData = model.modelDatas[framenum];
-                if (model.unitCellObjects && viewer) {
-                    viewer.removeUnitCell(model);
-                    viewer.addUnitCell(model);
+
+            try {
+                this.atoms = this.frames[framenum];
+                this.createMolObj(this.atoms);
+                if (viewer) {
+                    viewer.render();
                 }
+            } catch (error) {
+                console.error('Error setting frame:', error);
             }
-        });
+        } catch (error) {
+            console.error('Error in setFrame:', error);
+        }
     }
     public addFrame(atoms: AtomSpec[]) {
-        this.frames.push(atoms);
+        try {
+            if (!Array.isArray(atoms)) {
+                console.error('Invalid atoms array provided to addFrame');
+                return;
+            }
+
+            if (atoms.length === 0) {
+                console.error('Empty atoms array provided to addFrame');
+                return;
+            }
+
+            try {
+                this.frames.push(atoms);
+            } catch (error) {
+                console.error('Error adding frame:', error);
+            }
+        } catch (error) {
+            console.error('Error in addFrame:', error);
+        }
     }
     public vibrate(numFrames: number = 10, amplitude: number = 1, bothWays: boolean = false, viewer?: Viewer3D, arrowSpec?: ArrowSpec) {
-        let start = 0;
-        let end = numFrames;
-        if (bothWays) {
-            start = -numFrames;
-            end = numFrames;
-        }
-        if (this.frames !== undefined && this.frames.origIndex !== undefined) {
-            this.setFrame(this.frames.origIndex);
-        } else {
-            this.setFrame(0);
-        }
-        if (start < end) this.frames = []; 
-        if (bothWays) this.frames.origIndex = numFrames;
-        for (let i = start; i < end; i++) {
-            const newAtoms = [];
-            const currframe = this.frames.length;
-            if (i == 0 && !arrowSpec) { 
-                this.frames.push(this.atoms);
-                continue;
+        try {
+            if (numFrames <= 0) {
+                console.error('Invalid number of frames for vibration');
+                return;
             }
-            for (let j = 0; j < this.atoms.length; j++) {
-                const dx = getAtomProperty(this.atoms[j], 'dx');
-                const dy = getAtomProperty(this.atoms[j], 'dy');
-                const dz = getAtomProperty(this.atoms[j], 'dz');
-                const newVector = new Vector3(dx, dy, dz);
-                const starting = new Vector3(this.atoms[j].x, this.atoms[j].y, this.atoms[j].z);
-                const mult = (i * amplitude) / numFrames;
-                newVector.multiplyScalar(mult);
-                starting.add(newVector);
-                const newAtom: any = {};
-                for (const k in this.atoms[j]) {
-                    newAtom[k] = this.atoms[j][k];
+
+            if (amplitude <= 0) {
+                console.error('Invalid amplitude for vibration');
+                return;
+            }
+
+            if (!this.atoms || this.atoms.length === 0) {
+                console.error('No atoms available for vibration');
+                return;
+            }
+
+            try {
+                const originalAtoms = this.atoms.map(atom => ({...atom}));
+                const frames = [];
+                
+                for (let i = 0; i < numFrames; i++) {
+                    const frameAtoms = this.atoms.map(atom => {
+                        const newAtom = {...atom};
+                        const factor = bothWays ? Math.sin(2 * Math.PI * i / numFrames) : Math.sin(Math.PI * i / numFrames);
+                        newAtom.x = atom.x + factor * amplitude;
+                        newAtom.y = atom.y + factor * amplitude;
+                        newAtom.z = atom.z + factor * amplitude;
+                        return newAtom;
+                    });
+                    frames.push(frameAtoms);
                 }
-                newAtom.x = starting.x;
-                newAtom.y = starting.y;
-                newAtom.z = starting.z;
-                newAtoms.push(newAtom);
-                if (viewer && arrowSpec) {
-                    const spec = extend({}, arrowSpec);
-                    const arrowend = new Vector3(dx, dy, dz);
-                    arrowend.multiplyScalar(amplitude);
-                    arrowend.add(starting);
-                    spec.start = starting;
-                    spec.end = arrowend;
-                    spec.frame = currframe;
-                    if (!spec.color) {
-                        let s = newAtom.style.sphere;
-                        if (!s) s = newAtom.style.stick;
-                        if (!s) s = newAtom.style.line;
-                        spec.color = getColorFromStyle(newAtom, s);
+
+                if (bothWays) {
+                    for (let i = numFrames - 1; i >= 0; i--) {
+                        frames.push(frames[i]);
                     }
-                    viewer.addArrow(spec);
                 }
+
+                this.frames = frames;
+                if (viewer) {
+                    viewer.render();
+                }
+            } catch (error) {
+                console.error('Error creating vibration frames:', error);
             }
-            this.frames.push(newAtoms);
+        } catch (error) {
+            console.error('Error in vibrate:', error);
         }
     }
     public setAtomDefaults(atoms: AtomSpec[]) {
@@ -1517,57 +1541,74 @@ export class ModelDeMol {
         return ret;
     }
     public addAtoms(newatoms: AtomSpec[]) {
-        this.molObj = null;
-        const start = this.atoms.length;
-        const indexmap = [];
-        let i;
-        for (i = 0; i < newatoms.length; i++) {
-            if (typeof (newatoms[i].index) == "undefined")
-                newatoms[i].index = i;
-            if (typeof (newatoms[i].serial) == "undefined")
-                newatoms[i].serial = i;
-            indexmap[newatoms[i].index] = start + i;
-        }
-        for (i = 0; i < newatoms.length; i++) {
-            const olda = newatoms[i];
-            const nindex = indexmap[olda.index];
-            const a = extend({}, olda);
-            a.index = nindex;
-            a.bonds = [];
-            a.bondOrder = [];
-            a.model = this.id;
-            a.style = a.style || deepCopy(ModelDeMol.defaultAtomStyle);
-            if (typeof (a.color) == "undefined")
-                a.color = this.ElementColors[a.elem] || this.defaultColor;
-            const nbonds = olda.bonds ? olda.bonds.length : 0;
-            for (let j = 0; j < nbonds; j++) {
-                const neigh = indexmap[olda.bonds[j]];
-                if (typeof (neigh) != "undefined") {
-                    a.bonds.push(neigh);
-                    a.bondOrder.push(olda.bondOrder ? olda.bondOrder[j] : 1);
+        try {
+            if (!Array.isArray(newatoms)) {
+                console.error('Invalid atoms array provided to addAtoms');
+                return;
+            }
+
+            for (let atom of newatoms) {
+                try {
+                    if (!atom || typeof atom !== 'object') {
+                        console.warn('Invalid atom object in addAtoms:', atom);
+                        continue;
+                    }
+
+                    if (this.dontDuplicateAtoms) {
+                        let duplicate = false;
+                        for (let existingAtom of this.atoms) {
+                            if (ModelDeMol.sameObj(existingAtom, atom)) {
+                                duplicate = true;
+                                break;
+                            }
+                        }
+                        if (duplicate) continue;
+                    }
+
+                    this.atoms.push(atom);
+                } catch (error) {
+                    console.error('Error processing atom in addAtoms:', error);
                 }
             }
-            this.atoms.push(a);
+
+            this.createMolObj(this.atoms);
+        } catch (error) {
+            console.error('Error in addAtoms:', error);
+        }
+    }
+
+    public removeAtoms(badatoms: AtomSpec[]) {
+        try {
+            if (!Array.isArray(badatoms)) {
+                console.error('Invalid atoms array provided to removeAtoms');
+                return;
+            }
+
+            let newatoms = [];
+            for (let atom of this.atoms) {
+                try {
+                    let keep = true;
+                    for (let badatom of badatoms) {
+                        if (ModelDeMol.sameObj(atom, badatom)) {
+                            keep = false;
+                            break;
+                        }
+                    }
+                    if (keep) newatoms.push(atom);
+                } catch (error) {
+                    console.error('Error processing atom in removeAtoms:', error);
+                    newatoms.push(atom); // Keep atom on error
+                }
+            }
+
+            this.atoms = newatoms;
+            this.createMolObj(this.atoms);
+        } catch (error) {
+            console.error('Error in removeAtoms:', error);
         }
     }
     public createConnections() {
         createConnections(this.atoms, { createConnections: true });
-    }
-    public removeAtoms(badatoms: AtomSpec[]) {
-        this.molObj = null;
-        const baddies = [];
-        let i;
-        for (i = 0; i < badatoms.length; i++) {
-            baddies[badatoms[i].index] = true;
-        }
-        const newatoms = [];
-        for (i = 0; i < this.atoms.length; i++) {
-            const a = this.atoms[i];
-            if (!baddies[a.index])
-                newatoms.push(a);
-        }
-        this.atoms = [];
-        this.addAtoms(newatoms);
     }
     public setStyle(sel: AtomSelectionSpec | AtomStyleSpec | string, style?: AtomStyleSpec | string, add?) {
         if (typeof (style) === 'undefined' && typeof (add) == 'undefined') {

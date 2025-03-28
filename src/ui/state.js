@@ -71,73 +71,160 @@ $DeMol.StateManager = (function(){
       selections[sid].styles[stid].hidden = !selections[sid].styles[stid].hidden;
       render();
     }
-    this.addSurface = function(property, callback){
-      var id = makeid(4);
-      property.id = id;
-      var style = property.surfaceStyle.value;
-      if(style == null)
-        style = {};
-      var sel = (property.surfaceFor.value == 'all') ? { spec : {} } : selections[property.surfaceFor.value];
-      var generatorAtom = (property.surfaceOf.value == 'self')? sel.spec : {};
-      glviewer.addSurface(
-        $DeMol.SurfaceType[property.surfaceType.value],
-        style,
-        sel.spec,
-        generatorAtom
-      ).then((surfParam)=>{
-        surfaces[id] = surfParam[0];
-        if(callback != undefined)
-          callback(id, surfParam[0]);
-      }, ()=>{
-      });
-      return id;
-    }
-    this.removeSurface = function(id){
-      glviewer.removeSurface(surfaces[id])
-      delete surfaces[id];
-    }
-    this.editSurface = function(surfaceProperty){
-      var style = surfaceProperty.surfaceStyle.value || {}
-      var sel = (surfaceProperty.surfaceFor.value == 'all') ? { spec : {} } : selections[surfaceProperty.surfaceFor.value];
-      var generatorAtom = (surfaceProperty.surfaceOf.value == 'self')? sel.spec : {};
-      glviewer.removeSurface(surfaces[surfaceProperty.id]);
-      glviewer.addSurface(
-        $DeMol.SurfaceType[surfaceProperty.surfaceType.value],
-        style,
-        sel.spec,
-        generatorAtom
-      ).then((surfId)=>{
-        surfaces[surfaceProperty.id] = surfId[0];
-      });
-    }
-    this.getSelectionList = function(){
-      return Object.keys(selections);
-    }
-    this.openContextMenu = function(atom, x, y){ 
-      var atomExist = false;
-      if(atom){
-        atomExist = Object.keys(atomLabel).find((i)=>{
-          if (i == atom.index)
-            return true;
-          else 
-            return false;
+    this.addSurface = function(property, callback) {
+      try {
+        if (!property) {
+          console.error('Invalid property provided to addSurface');
+          return null;
+        }
+
+        var id = makeid(4);
+        property.id = id;
+        var style = property.surfaceStyle?.value || {};
+        var sel = (property.surfaceFor?.value == 'all') ? { spec : {} } : selections[property.surfaceFor.value];
+        var generatorAtom = (property.surfaceOf?.value == 'self') ? sel.spec : {};
+
+        if (!sel) {
+          console.error('Invalid selection for surface');
+          return null;
+        }
+
+        glviewer.addSurface(
+          $DeMol.SurfaceType[property.surfaceType.value],
+          style,
+          sel.spec,
+          generatorAtom
+        ).then((surfParam) => {
+          if (surfParam && surfParam[0]) {
+            surfaces[id] = surfParam[0];
+            if (typeof callback === 'function') {
+              callback(id, surfParam[0]);
+            }
+          } else {
+            console.error('Invalid surface parameters returned');
+          }
+        }).catch((error) => {
+          console.error('Error adding surface:', error);
+          delete surfaces[id];
         });
-        if(atomExist != undefined )
-          atomExist = true;
-        else 
-          atomExist = false;
+
+        return id;
+      } catch (error) {
+        console.error('Error in addSurface:', error);
+        return null;
       }
-      if(this.ui) this.ui.tools.contextMenu.show(x, y, atom, atomExist);    
+    }
+    this.removeSurface = function(id) {
+      try {
+        if (!id || !surfaces[id]) {
+          console.warn('Invalid surface ID or surface not found');
+          return;
+        }
+        glviewer.removeSurface(surfaces[id]);
+        delete surfaces[id];
+      } catch (error) {
+        console.error('Error removing surface:', error);
+      }
+    }
+    this.editSurface = function(surfaceProperty) {
+      try {
+        if (!surfaceProperty || !surfaceProperty.id) {
+          console.error('Invalid surface property provided');
+          return;
+        }
+
+        var style = surfaceProperty.surfaceStyle?.value || {};
+        var sel = (surfaceProperty.surfaceFor?.value == 'all') ? { spec : {} } : selections[surfaceProperty.surfaceFor.value];
+        var generatorAtom = (surfaceProperty.surfaceOf?.value == 'self') ? sel.spec : {};
+
+        if (!sel) {
+          console.error('Invalid selection for surface edit');
+          return;
+        }
+
+        if (surfaces[surfaceProperty.id]) {
+          glviewer.removeSurface(surfaces[surfaceProperty.id]);
+        }
+
+        glviewer.addSurface(
+          $DeMol.SurfaceType[surfaceProperty.surfaceType.value],
+          style,
+          sel.spec,
+          generatorAtom
+        ).then((surfId) => {
+          if (surfId && surfId[0]) {
+            surfaces[surfaceProperty.id] = surfId[0];
+          } else {
+            console.error('Invalid surface parameters returned during edit');
+          }
+        }).catch((error) => {
+          console.error('Error editing surface:', error);
+        });
+      } catch (error) {
+        console.error('Error in editSurface:', error);
+      }
+    }
+    this.getSelectionList = function() {
+      try {
+        return Object.keys(selections || {});
+      } catch (error) {
+        console.error('Error getting selection list:', error);
+        return [];
+      }
+    }
+    this.openContextMenu = function(atom, x, y) {
+      try {
+        if (!this.ui) {
+          console.warn('UI not initialized');
+          return;
+        }
+
+        var atomExist = false;
+        if (atom) {
+          atomExist = Object.keys(atomLabel || {}).find((i) => {
+            return i == atom.index;
+          }) !== undefined;
+        }
+
+        this.ui.tools.contextMenu.show(x, y, atom, atomExist);
+      } catch (error) {
+        console.error('Error opening context menu:', error);
+      }
     }
     glviewer.userContextMenuHandler = this.openContextMenu.bind(this);
-    this.addLabel = function(labelValue){
-      labels[labelValue.sel.value] = labels[labelValue.sel.value] || [];
-      var labelProp = $DeMol.labelStyles[labelValue.style.value];
-      var selection = selections[labelValue.sel.value];
-      var offset = labels[labelValue.sel.value].length;
-      labelProp['screenOffset'] = new $DeMol.Vector2(0, -1*offset*35);
-      labels[labelValue.sel.value].push(glviewer.addLabel(labelValue.text.value, labelProp, selection.spec));
-      this.ui.tools.contextMenu.hide();
+    this.addLabel = function(labelValue) {
+        try {
+            if (!labelValue || !labelValue.sel || !labelValue.sel.value) {
+                console.error('Invalid label value provided');
+                return;
+            }
+
+            if (!selections[labelValue.sel.value]) {
+                console.error('Invalid selection for label');
+                return;
+            }
+
+            labels[labelValue.sel.value] = labels[labelValue.sel.value] || [];
+            var labelProp = $DeMol.labelStyles[labelValue.style.value];
+            
+            if (!labelProp) {
+                console.error('Invalid label style:', labelValue.style.value);
+                return;
+            }
+
+            var selection = selections[labelValue.sel.value];
+            var offset = labels[labelValue.sel.value].length;
+            labelProp['screenOffset'] = new $DeMol.Vector2(0, -1*offset*35);
+            
+            try {
+                labels[labelValue.sel.value].push(glviewer.addLabel(labelValue.text.value, labelProp, selection.spec));
+                this.ui.tools.contextMenu.hide();
+            } catch (error) {
+                console.error('Error adding label to viewer:', error);
+            }
+        } catch (error) {
+            console.error('Error in addLabel:', error);
+        }
     }
     this.addAtomLabel = function(labelValue, atom, styleName='milk'){
       var atomExist = Object.keys(atomLabel).find((i)=>{
@@ -171,8 +258,16 @@ $DeMol.StateManager = (function(){
         }
     }
     glviewer.container.addEventListener('wheel', this.exitContextMenu.bind(this), { passive: false });
-    this.removeLabel = function(){
-      this.ui.tools.contextMenu.hide();
+    this.removeLabel = function() {
+        try {
+            if (!this.ui) {
+                console.warn('UI not initialized');
+                return;
+            }
+            this.ui.tools.contextMenu.hide();
+        } catch (error) {
+            console.error('Error in removeLabel:', error);
+        }
     }
     this.removeAtomLabel = function(atom){
       var label = atomLabel[atom.index];
